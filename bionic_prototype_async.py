@@ -41,35 +41,49 @@ timeMIDIsend = datetime(2014, 9, 12, 11, 19, 54)
 
 def message_received(response):
     try:
-        global timeMIDIsend
-        (unpacked_data, remaining_data) = tinypacks.unpack(response['rf_data'])
+        print "Message received!"        
 
-        # tinypacks data structure, date added
-        unpacked_data['time'] = datetime.now()
-        unitID = response['source_addr'] # need to convert to string?
+        packed_data = response['rf_data']
+        # Initialize unpacked_data so the while loop will execute at least once
+        unpacked_data = 0
 
-        ## Add to master list, with unitID as key
-        # if masterList does not contain unitID, do something different
-        if not unitID in masterList.keys():
-            masterList[unitID] = []
+        while unpacked_data is not None:
+            try:
+                unpacked_data, packed_data = tinypacks.unpack(packed_data)
+            except:
+                print "Exit unpacking loop"
+                break
+            else:
+                if unpacked_data is not None:
+                    print unpacked_data
 
-        # check to see if queue is too big
-        if len(masterList[unitID]) >= numberStoredEntries:
-            masterList[unitID].pop() # remove last entry
 
-        # insert most recent entry
-        masterList[unitID].insert(0, unpacked_data)
+        # # tinypacks data structure, date added
+        # unpacked_data['time'] = datetime.now()
+        # unitID = response['source_addr'] # need to convert to string?
 
-        # print unpacked_data
-        if "msg" in unpacked_data.keys():
-            valueList = unpacked_data["msg"]
-            aaRealPercent = valueList["val"]
-            if ( datetime.now() - timeMIDIsend ) > timedelta(milliseconds=30):
-                if aaRealPercent > 0.25:
-                    SC.triggerMidiMusic( 63, translate(aaRealPercent, 0, 1, 60, 127) )
-                    # SC.triggerMidiMusic( 63, 127 )
-                    print "TRIGGER!"
-                    timeMIDIsend = datetime.now()
+        # ## Add to master list, with unitID as key
+        # # if masterList does not contain unitID, do something different
+        # if not unitID in masterList.keys():
+        #     masterList[unitID] = []
+
+        # # check to see if queue is too big
+        # if len(masterList[unitID]) >= numberStoredEntries:
+        #     masterList[unitID].pop() # remove last entry
+
+        # # insert most recent entry
+        # masterList[unitID].insert(0, unpacked_data)
+
+        # # print unpacked_data
+        # if "msg" in unpacked_data.keys():
+        #     valueList = unpacked_data["msg"]
+        #     aaRealPercent = valueList["val"]
+        #     if ( datetime.now() - timeMIDIsend ) > timedelta(milliseconds=30):
+        #         if aaRealPercent > 0.25:
+        #             SC.triggerMidiMusic( 63, translate(aaRealPercent, 0, 1, 60, 127) )
+        #             # SC.triggerMidiMusic( 63, 127 )
+        #             print "TRIGGER!"
+        #             timeMIDIsend = datetime.now()
 
         print ""
 
