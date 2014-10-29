@@ -40,12 +40,15 @@ timeMIDIsend = datetime(2014, 9, 12, 11, 19, 54)
 
 
 def message_received(response):
+    global timeMIDIsend
+
     try:
         print "Message received!"        
 
         packed_data = response['rf_data']
         # Initialize unpacked_data so the while loop will execute at least once
         unpacked_data = 0
+        messages = []
 
         while unpacked_data is not None:
             try:
@@ -56,7 +59,9 @@ def message_received(response):
             else:
                 if unpacked_data is not None:
                     print unpacked_data
+                    messages.append(unpacked_data)
 
+        print "Unpacked all data"
 
         # # tinypacks data structure, date added
         # unpacked_data['time'] = datetime.now()
@@ -74,18 +79,27 @@ def message_received(response):
         # # insert most recent entry
         # masterList[unitID].insert(0, unpacked_data)
 
-        # # print unpacked_data
-        # if "msg" in unpacked_data.keys():
-        #     valueList = unpacked_data["msg"]
-        #     aaRealPercent = valueList["val"]
-        #     if ( datetime.now() - timeMIDIsend ) > timedelta(milliseconds=30):
-        #         if aaRealPercent > 0.25:
-        #             SC.triggerMidiMusic( 63, translate(aaRealPercent, 0, 1, 60, 127) )
-        #             # SC.triggerMidiMusic( 63, 127 )
-        #             print "TRIGGER!"
-        #             timeMIDIsend = datetime.now()
+        try:
+            # Only select the first message for now
+            message = messages[0]
+            if "msg" in message.keys():
+                print "msg found..."
+                valueList = message["msg"]
+                aaRealPercent = valueList["val"]
+                try:
+                    timeMIDIsend
+                except:
+                    print "issue with timeMIDIsend"
+                if ( datetime.now() - timeMIDIsend ) > timedelta(milliseconds=30):
+                    if aaRealPercent > 0.25:
+                        SC.triggerMidiMusic( 63, translate(aaRealPercent, 0, 1, 60, 127) )
+                        # SC.triggerMidiMusic( 63, 127 )
+                        print "TRIGGER!"
+                        timeMIDIsend = datetime.now()
 
-        print ""
+            print ""
+        except:
+            print "Error in interaction engine"
 
     except:
         print "Parsing error in message_received" 
