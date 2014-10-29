@@ -38,7 +38,7 @@ except (EOFError, KeyboardInterrupt):
     sys.exit()
 
 print("Attaching MIDI input callback handler.")
-# midiin.set_callback(MidiInputHandler(port_name))
+midiin.set_callback(MidiInputHandler("Bionic Input"))
 
 
 
