@@ -44,12 +44,10 @@ midiin.set_callback(MidiInputHandler("Bionic Input"))
 
 
 midiout = rtmidi.MidiOut()
-available_ports = midiout.get_ports()
-
-if available_ports:
-    midiout.open_port(0)
-else:
+try:
     midiout.open_virtual_port("Bionic Output")
+except:
+	print "Couldn't create Bionic Output"
 
 
 
