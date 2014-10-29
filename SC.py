@@ -28,15 +28,17 @@ class MidiInputHandler(object):
         self._wallclock += deltatime
         print("[%s] @%0.6f %r" % (self.port, self._wallclock, message))
 
+midiin = rtmidi.MidiIn()
 
-port = sys.argv[1] if len(sys.argv) > 1 else None
+# port = sys.argv[1] if len(sys.argv) > 1 else None
 try:
-    midiin, port_name = open_midiport(port)
+    # midiin, port_name = open_midiport(port)
+    midiin.open_virtual_port("Bionic Input")
 except (EOFError, KeyboardInterrupt):
     sys.exit()
 
 print("Attaching MIDI input callback handler.")
-midiin.set_callback(MidiInputHandler(port_name))
+# midiin.set_callback(MidiInputHandler(port_name))
 
 
 
@@ -47,7 +49,7 @@ available_ports = midiout.get_ports()
 if available_ports:
     midiout.open_port(0)
 else:
-    midiout.open_virtual_port("Bionic Arm")
+    midiout.open_virtual_port("Bionic Output")
 
 
 
