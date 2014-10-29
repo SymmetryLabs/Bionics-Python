@@ -146,9 +146,11 @@ def translate(value, leftMin, leftMax, rightMin, rightMax):
 
 
 
-def sendBroadcast(_data):
+def sendBroadcast(xbee, _data):
+    print "Sending broadcast"
     packed_data = tinypacks.pack(_data)
-    numberBytes = struct.pack('B', len(packed_data))
+    # numberBytes = struct.pack('B', len(packed_data)) # evidently don't need this anymore
     xbee.tx(
         dest_addr = '\xFF\xFF',
-        data = (numberBytes + packed_data))
+        # data = (numberBytes + packed_data))
+        data = (packed_data))
