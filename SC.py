@@ -4,26 +4,67 @@ SC.py
 Contains all functions that create the virtual MIDI port and map to MIDI controls (channel, pitch, velocity, etc)
 
 10/28/2014 - Works!
+10/29/2014 - Adding ability to print incoming MIDI messages
 """
+
+import logging
+import sys
 
 import time
 import rtmidi
 import random
 
-midi = rtmidi.MidiOut()
-available_ports = midi.get_ports()
+# From test_midiin_callback.py in rtmidi examples
+from rtmidi.midiutil import open_midiport
+log = logging.getLogger('test_midiin_callback')
+
+class MidiInputHandler(object):
+    def __init__(self, port):
+        self.port = port
+        self._wallclock = time.time()
+
+    def __call__(self, event, data=None):
+        message, deltatime = event
+        self._wallclock += deltatime
+        print("[%s] @%0.6f %r" % (self.port, self._wallclock, message))
+
+
+port = sys.argv[1] if len(sys.argv) > 1 else None
+try:
+    midiin, port_name = open_midiport(port)
+except (EOFError, KeyboardInterrupt):
+    sys.exit()
+
+print("Attaching MIDI input callback handler.")
+midiin.set_callback(MidiInputHandler(port_name))
+
+
+
+
+midiout = rtmidi.MidiOut()
+available_ports = midiout.get_ports()
 
 if available_ports:
-    midi.open_port(0)
+    midiout.open_port(0)
 else:
-    midi.open_virtual_port("Bionic Arm")
+    midiout.open_virtual_port("Bionic Arm")
+
+
+
+
+def SCexit():
+    print("Exit.")
+    midiin.close_port()
+    del midiin
+    midiout.close_port()
+    del midiout
 
 
 def noteOn(address, value):
-	midi.send_message([0x92, address, value])
+	midiout.send_message([0x92, address, value])
 
 def noteOff(address, value):
-	midi.send_message([0x82, address, value])
+	midiout.send_message([0x82, address, value])
 
 def noteFor(address, value, _time):
 	noteOn(address, value)
@@ -45,9 +86,6 @@ def triggerMidiMusic(pitch, velocity):
 
 
 
-
-
-
 def effectOn():
 	noteOn(93, 0)
 
@@ -63,7 +101,7 @@ def effectOnFor(_time):
 # parameter ranges 0-3
 def effectParameterChange(parameter, value):
 	parameterAddress = 20 + parameter
-	midi.send_message([0xB0, parameterAddress, value])
+	mitiout.send_message([0xB0, parameterAddress, value])
 
 
 
