@@ -43,12 +43,15 @@ def message_received(response):
     global timeMIDIsend
 
     try:
+        print "----------"
         print "Message received!"        
 
         packed_data = response['rf_data']
+        # print "Size of packed_data ", len(packed_data)
+
         # Initialize unpacked_data so the while loop will execute at least once
         unpacked_data = 0
-        messages = []
+        reports = []
 
         while unpacked_data is not None:
             try:
@@ -58,10 +61,17 @@ def message_received(response):
                 break
             else:
                 if unpacked_data is not None:
-                    print unpacked_data
-                    messages.append(unpacked_data)
+                    # print unpacked_data
+                    reports.append(unpacked_data)
 
+        print "Num of Reports = ", len(reports)
+        for report in reports:
+            print "-Start Report-"
+            for message in report['msg']:
+                print "message ", message
+            print "-End Report-"
         print "Unpacked all data"
+        print ""
 
         # # tinypacks data structure, date added
         # unpacked_data['time'] = datetime.now()
@@ -118,6 +128,8 @@ def message_received(response):
     #         hueSC = 127 - (hueNow * 127/255)
     #         # print hueSC
     #         SC.boomRandom(mag,hueSC)
+    print "----------"
+    print ""
 
 
 
