@@ -46,14 +46,23 @@ except:
 # --------------------------------------------
 # INITIALIZE INTERNAL STUFF
 
+# Main data structure for communications tracking
+masterList = {}
+numberStoredEntries = 20
+
+global hueNow
+hueNow = 0
+
+huePercent = 0
 
 
 # --------------------------------------------
 # --------------------------------------------
-# INITIALIZE XBEE
-# SET CALLBACK TO MIDI OUT
-# SET CALLBACK TO INTERNAL STUFF
+# x- INITIALIZE XBEE
+# x- SET XBEE CALLBACK TO MIDI OUT
+# SET XBEE CALLBACK TO INTERNAL STUFF
 
+# MIDI OUT and notes must be enabled prior to this...
 def message_received(response):
     try:
         print "----------"
@@ -157,19 +166,107 @@ xbee = XBee(ser, escaped = True, callback=message_received)
 print "Waiting for incoming messages..."
 
 
+
+# Defined to take in an xbee object
+def sendBroadcast(xbee, _data):
+    print "Sending xBee broadcast"
+    packed_data = tinypacks.pack(_data)
+    xbee.tx(
+        dest_addr = '\xFF\xFF',
+        data = (packed_data))
+
+
+
+
+
 # --------------------------------------------
 # --------------------------------------------
-# INITIALIZE MIDI IN
+# x- INITIALIZE MIDI IN
 # SET CALLBACK TO MIDI OUT
 # SET CALLBACK TO INTERNAL STUFF
 
 
+# DEFINE MIDI IN CALLBACK HERE -> PROBABLY ONLY REFERENCES INTERNAL VARIABLES AND XBEE
+class MidiInputHandler(object):
+    def __init__(self, port, portOut):
+        self.port = port
+        self.portOut = portOut
+        self._wallclock = time.time()
+
+    def __call__(self, event, data=None):
+        message, deltatime = event
+        self._wallclock += deltatime
+        print("[%s] @%0.6f %r" % (self.port, self._wallclock, message))
+        
+        # put handling data here...
+        # push to self.portOut
+
+
+
+
+# CREATE MIDI INPUT, ASSIGN CALLBACK FUNCTION
+midiin = rtmidi.MidiIn()
+
+# port = sys.argv[1] if len(sys.argv) > 1 else None
+try:
+    # midiin, port_name = open_midiport(port)
+    midiin.open_virtual_port("Bionic Input")
+except (EOFError, KeyboardInterrupt):
+    sys.exit()
+
+print("Attaching MIDI input callback handler.")
+midiin.set_callback(MidiInputHandler("Bionic Input", "Bionic Output"))
+
+
+
+
 # --------------------------------------------
 # --------------------------------------------
 
+
+# MAIN LOOP
+# Continuously read and print packets
+while True:
+    try:
+        # if masterList['']
+        # hueNow += 5
+        # if hueNow > 255:
+        #     hueNow -= 255
+        # print hueNow
+
+        # NEED TO BUILD INTO PROPER MODEL LOGIC STRUCTURE
+        # Put broadcast data into structure and send out to units
+        # 
+        # print "hue ", hueNow
+        time.sleep(0.1)
+
+        huePercent+=0.05
+        if huePercent > 1:
+            huePercent = 0
+        broadcastData = { "pName" : "hue", "per" : huePercent }
+        sendBroadcast( xbee, broadcastData )
+        print "Broadcasted: ", broadcastData
+        print "----------"
+        print
+
+    except KeyboardInterrupt:
+        print "KeyboardInterrupt EXCEPT"
+        break
+    except:
+        print "Generic EXCEPT"
+        break
+
+
+
+
 try:
+	print "Exiting..."
 	xbee.halt()
 	ser.close()
+	midiin.close_port()
+	del midiin
+	midiout.close_port()
+	del midiout
 	print "Successfully closed!"
 except:
 	print "Couldn't close!"
