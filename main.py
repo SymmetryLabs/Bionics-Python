@@ -179,8 +179,9 @@ def shiftOff():
 masterList = {}
 numberStoredEntries = 20
 
-global hueNow
+global hueNow, magnitudeCutoff
 hueNow = 0
+magnitudeCutoff = 30
 
 huePercent = 0
 
@@ -199,6 +200,8 @@ huePercent = 0
 # MIDI OUT and notes must be enabled prior to this...
 def message_received(response):
     try:
+        global magnitudeCutoff
+
         print "----------"
         print "Message received!"        
 
@@ -257,7 +260,7 @@ def message_received(response):
                 except:
                     print "issue with timeMIDIsend"
                 if ( datetime.now() - timeMIDIsend ) > timedelta(milliseconds=30):
-                    if aaRealPercent > 0.25:
+                    if aaRealPercent > magnitudeCutoff:
                         SC.triggerMidiMusic( 63, translate(aaRealPercent, 0, 1, 60, 127) )
                         # SC.triggerMidiMusic( 63, 127 )
                         print "TRIGGER!"
@@ -317,14 +320,20 @@ def sendBroadcast(xbee, _data):
 
 
 
+def triggerUnit_changeHue( pitch ):
+    huePercent = translate( pitch, 0., 127., 0., 1.)
+    broadcastData = { "pNam" : "hue", "per" : huePercent }
+    sendBroadcast(xbee, broadcastData)
 
+def triggerPython_magnitudeCutoff( pitch ):
+    magnitudeCutoff = translate( pitch, 0, 127., 0., 1.)
 
 
 
 # --------------------------------------------
 # --------------------------------------------
 # x- INITIALIZE MIDI IN
-# SET CALLBACK TO MIDI OUT
+# x- SET CALLBACK TO MIDI OUT
 # SET CALLBACK TO INTERNAL STUFF
 
 
@@ -354,12 +363,13 @@ class MidiInputHandler(object):
 
         # SET XBEE OUT MESSAGES HERE
         if eventType is NOTE_ON and channel is 0x00:
-        	# trigger hue change
-        	# MAKE THIS INTO A FUNCTION
             print "Hue change triggered!"
-            huePercent = translate( pitch, 0., 127., 0., 1.)
-            broadcastData = { "pNam" : "hue", "per" : huePercent }
-            sendBroadcast(xbee, broadcastData)
+            triggerUnit_changeHue( pitch )
+
+        if eventType is NOTE_ON and channel is 0x01:
+            print "Tweak internal parameter"
+            triggerPython_magnitudeCutoff( pitch )
+            
 
 
 
@@ -420,6 +430,8 @@ while True:
         huePercent+=0.05
         if huePercent > 1:
             huePercent = 0
+
+        print "magnitudeCutoff", magnitudeCutoff
         # broadcastData = { "pName" : "hue", "per" : huePercent }
         # sendBroadcast( xbee, broadcastData )
         # print "Broadcasted: ", broadcastData
