@@ -311,7 +311,7 @@ def sendBroadcast(xbee, _data):
     packed_data = tinypacks.pack(_data)
     xbee.tx(
         dest_addr = '\xFF\xFF',
-        data = (packed_data))
+        data = (packed_data) )
 
 
 
@@ -322,7 +322,8 @@ def sendBroadcast(xbee, _data):
 
 def triggerUnit_changeHue( pitch ):
     huePercent = translate( pitch, 0., 127., 0., 1.)
-    broadcastData = { "pNam" : "hue", "per" : huePercent }
+    # broadcastData = { "pNam" : "hue", "per" : huePercent }
+    broadcastData = [ 1, huePercent ]
     sendBroadcast(xbee, broadcastData)
 
 def triggerPython_magnitudeCutoff( pitch ):
@@ -427,14 +428,13 @@ while True:
         # print "hue ", hueNow
         time.sleep(0.1)
 
-        huePercent+=0.05
+        huePercent+=0.01
         if huePercent > 1:
             huePercent = 0
+        broadcastData = [ 1, huePercent ]
+        sendBroadcast(xbee, broadcastData)
 
         print "magnitudeCutoff", magnitudeCutoff
-        # broadcastData = { "pName" : "hue", "per" : huePercent }
-        # sendBroadcast( xbee, broadcastData )
-        # print "Broadcasted: ", broadcastData
         print "----------"
         print
 
