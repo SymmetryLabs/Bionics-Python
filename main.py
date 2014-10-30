@@ -181,7 +181,7 @@ numberStoredEntries = 20
 
 global hueNow, magnitudeCutoff
 hueNow = 0
-magnitudeCutoff = 30
+magnitudeCutoff = 0.5
 
 huePercent = 0
 
@@ -326,7 +326,14 @@ def triggerUnit_changeHue( pitch ):
     broadcastData = [ 1, huePercent ]
     sendBroadcast(xbee, broadcastData)
 
+def triggerUnit_changeDecay( pitch ):
+    decayPercent = translate( pitch, 0., 127., 0., 1.)
+    # broadcastData = { "pNam" : "hue", "per" : huePercent }
+    broadcastData = [ 2, decayPercent ]
+    sendBroadcast(xbee, broadcastData)
+
 def triggerPython_magnitudeCutoff( pitch ):
+    global magnitudeCutoff
     magnitudeCutoff = translate( pitch, 0, 127., 0., 1.)
 
 
@@ -363,11 +370,15 @@ class MidiInputHandler(object):
         # SET INTERNAL PARAMETER CHANGES HERE
 
         # SET XBEE OUT MESSAGES HERE
-        if eventType is NOTE_ON and channel is 0x00:
+        if eventType is NOTE_ON and channel is 0x01:
             print "Hue change triggered!"
             triggerUnit_changeHue( pitch )
 
-        if eventType is NOTE_ON and channel is 0x01:
+        if eventType is NOTE_ON and channel is 0x02:
+            print "Decay change triggered!"
+            triggerUnit_changeDecay( pitch )
+
+        if eventType is NOTE_ON and channel is 0x03:
             print "Tweak internal parameter"
             triggerPython_magnitudeCutoff( pitch )
             
@@ -425,14 +436,7 @@ while True:
         # NEED TO BUILD INTO PROPER MODEL LOGIC STRUCTURE
         # Put broadcast data into structure and send out to units
         # 
-        # print "hue ", hueNow
-        time.sleep(0.1)
-
-        huePercent+=0.01
-        if huePercent > 1:
-            huePercent = 0
-        broadcastData = [ 1, huePercent ]
-        sendBroadcast(xbee, broadcastData)
+        time.sleep(1)
 
         print "magnitudeCutoff", magnitudeCutoff
         print "----------"
