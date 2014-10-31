@@ -327,7 +327,11 @@ def sendBroadcast(xbee, _data):
 
 
 
-
+def triggerUnit_changeAnim( pitch ):
+    animNumber = int(translate( pitch, 0, 127, 0, 3))
+    # broadcastData = { "pNam" : "hue", "per" : huePercent }
+    broadcastData = [ 1, animNumber ]
+    sendBroadcast(xbee, broadcastData)
 
 def triggerUnit_changeHue( pitch ):
     huePercent = translate( pitch, 0., 127., 0., 1.)
@@ -379,6 +383,10 @@ class MidiInputHandler(object):
         # SET INTERNAL PARAMETER CHANGES HERE
 
         # SET XBEE OUT MESSAGES HERE
+        if eventType is NOTE_ON and channel is 0x00:
+                    print "Anim change triggered!"
+                    triggerUnit_changeAnim( pitch )
+
         if eventType is NOTE_ON and channel is 0x01:
             print "Hue change triggered!"
             triggerUnit_changeHue( pitch )
