@@ -28,8 +28,15 @@ from datetime import datetime
 from datetime import timedelta
 
 
-
-
+print ""
+print ""
+print ""
+print "--------------------"
+print "--------------------"
+print "Bionic-Python INITIALIZING..."
+print "--------------------"
+print "--------------------"
+print ""
 
 
 
@@ -47,6 +54,7 @@ from datetime import timedelta
 midiout = rtmidi.MidiOut()
 try:
     midiout.open_virtual_port("Bionic Output")
+    print "\"Bionic Output\" MIDI Channel Created"
 except:
 	print "Couldn't create Bionic Output"
 
@@ -202,8 +210,8 @@ def message_received(response):
     try:
         global magnitudeCutoff
 
-        print "----------"
-        print "Message received!"        
+        print "--------------------"
+        print "XBEE Message RECEIVED"        
 
         packed_data = response['rf_data']
         # print "Size of packed_data ", len(packed_data)
@@ -268,11 +276,11 @@ def message_received(response):
 
             print ""
         except:
-            print "Error in interaction engine"
+            print "(IGNORABLE) ERROR! Triggering interaction engine from XBEE message received"
 
     except:
-        print "Parsing error in message_received" 
-    print "----------"
+        print "ERROR! Parsing error in message_received" 
+    print "--------------------"
     print ""
 
 message_received.timeMIDIsend = datetime.now()
@@ -287,27 +295,28 @@ for port in PORTS:
     try:
         ser = serial.Serial(port, BAUD_RATE)
     except OSError:
-        print "Unsuccessfully tried PORT = ", port
+        print "ERROR! Unsuccessfully tried PORT = ", port
     else:
         print "Connected to PORT = ", port
         break
 # Check to see if Serial successfully connected
 try:
     ser
+    print "Serial Port CREATED"
 except:
-    print "Serial didn't connect"
+    print "ERROR! Serial Port couldn't connect"
     raise OSError
 
 # Initialize xbee object if Serial connetion successful
 xbee = XBee(ser, escaped = True, callback=message_received)
-print "Waiting for incoming messages..."
+print "XBEE Object CREATED"
 
 
 
 # Defined to take in an xbee object
 # Make sure not to send strings longer than 4 letters
 def sendBroadcast(xbee, _data):
-    print "Sending xBee broadcast"
+    print "XBEE Sending Broadcast"
     packed_data = tinypacks.pack(_data)
     xbee.tx(
         dest_addr = '\xFF\xFF',
@@ -400,10 +409,11 @@ midiin = rtmidi.MidiIn()
 try:
     # midiin, port_name = open_midiport(port)
     midiin.open_virtual_port("Bionic Input")
+    print "\"Bionic Input\" MIDI Channel Created"
 except (EOFError, KeyboardInterrupt):
     sys.exit()
 
-print("Attaching MIDI input callback handler.")
+print("Attaching MIDI input callback handler")
 midiin.set_callback(MidiInputHandler("Bionic Input"))
 
 
@@ -425,6 +435,15 @@ midiin.set_callback(MidiInputHandler("Bionic Input"))
 
 # MAIN LOOP
 # Continuously read and print packets
+print ""
+print ""
+print "--------------------"
+print "--------------------"
+print "Bionic-Python STARTED"
+print "--------------------"
+print "--------------------"
+print "** Console Reports will trigger as events are received **"
+
 while True:
     try:
         # if masterList['']
@@ -436,11 +455,11 @@ while True:
         # NEED TO BUILD INTO PROPER MODEL LOGIC STRUCTURE
         # Put broadcast data into structure and send out to units
         # 
-        time.sleep(1)
+        time.sleep(0.05)
 
-        print "magnitudeCutoff", magnitudeCutoff
-        print "----------"
-        print
+        # print "magnitudeCutoff", magnitudeCutoff
+        # print "----------"
+        # print
 
     except KeyboardInterrupt:
         print "KeyboardInterrupt EXCEPT"
@@ -453,13 +472,17 @@ while True:
 
 
 try:
-	print "Exiting..."
-	xbee.halt()
-	ser.close()
-	midiin.close_port()
-	del midiin
-	midiout.close_port()
-	del midiout
-	print "Successfully closed!"
+    print "--------------------"
+    print "--------------------"
+    print "Bionic-Python Exiting..."
+    xbee.halt()
+    ser.close()
+    midiin.close_port()
+    del midiin
+    midiout.close_port()
+    del midiout
+    print "Bionic-Python CLOSED"
+    print "--------------------"
+    print "--------------------"
 except:
-	print "Couldn't close!"
+    print "Couldn't close!"
