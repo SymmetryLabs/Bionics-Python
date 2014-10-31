@@ -271,7 +271,7 @@ def message_received(response):
                     if aaRealPercent > magnitudeCutoff:
                         SC.triggerMidiMusic( 63, translate(aaRealPercent, 0, 1, 60, 127) )
                         # SC.triggerMidiMusic( 63, 127 )
-                        print "TRIGGER!"
+                        print "MIDI Music TRIGGER!"
                         message_received.timeMIDIsend = datetime.now()
 
             print ""
