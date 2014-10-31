@@ -187,12 +187,14 @@ def shiftOff():
 masterList = {}
 numberStoredEntries = 20
 
-global hueNow, magnitudeCutoff
+global hueNow, magnitudeCutoff, timeMIDIsend
 hueNow = 0
 magnitudeCutoff = 0.5
 
 huePercent = 0
 
+timeMIDIsend = datetime.now()
+print timeMIDIsend
 
 
 
@@ -207,8 +209,8 @@ huePercent = 0
 
 # MIDI OUT and notes must be enabled prior to this...
 def message_received(response):
+    global magnitudeCutoff, timeMIDIsend
     try:
-        global magnitudeCutoff
 
         print "--------------------"
         print "XBEE Message RECEIVED"        
@@ -219,6 +221,7 @@ def message_received(response):
         # Initialize unpacked_data so the while loop will execute at least once
         unpacked_data = 0
         reports = []
+        messages = []
 
         while unpacked_data is not None:
             try:
@@ -236,6 +239,7 @@ def message_received(response):
             print "-Start Report-"
             for message in report['msg']:
                 print "message ", message
+                messages.append(message)
             print "-End Report-"
         print "Unpacked all data"
         print ""
@@ -256,23 +260,28 @@ def message_received(response):
         # # insert most recent entry
         # masterList[unitID].insert(0, unpacked_data)
 
+
         try:
             # Only select the first message for now
             message = messages[0]
-            if "msg" in message.keys():
-                print "msg found..."
-                valueList = message["msg"]
-                aaRealPercent = valueList["val"]
-                try:
-                    timeMIDIsend
-                except:
-                    print "issue with timeMIDIsend"
+            # print "messages[0] : ", message
+
+            if unicode("lvl" ) == message["pNam"]:
+                aaRealPercent = message["val"]
+                # print "ooga"
+                # try:
+                #     timeMIDIsend
+                #     magnitudeCutoff
+                # except:
+                #     print "issue with timeMIDIsend or magnitudeCutoff"
+                # print "booga"
                 if ( datetime.now() - timeMIDIsend ) > timedelta(milliseconds=30):
+                    # print "wooga"
                     if aaRealPercent > magnitudeCutoff:
-                        SC.triggerMidiMusic( 63, translate(aaRealPercent, 0, 1, 60, 127) )
-                        # SC.triggerMidiMusic( 63, 127 )
+                        triggerMidiMusic( 63, translate(aaRealPercent, 0, 1, 60, 127) )
+                        # triggerMidiMusic( 63, 127 )
                         print "MIDI Music TRIGGER!"
-                        message_received.timeMIDIsend = datetime.now()
+                        timeMIDIsend = datetime.now()
 
             print ""
         except:
@@ -283,7 +292,8 @@ def message_received(response):
     print "--------------------"
     print ""
 
-message_received.timeMIDIsend = datetime.now()
+# Attempt to make this variable static to the function
+# message_received.timeMIDIsend = datetime.now()
 
 
 
