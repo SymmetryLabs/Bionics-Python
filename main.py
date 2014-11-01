@@ -91,27 +91,21 @@ def translate(value, leftMin, leftMax, rightMin, rightMax):
     return rightMin + (valueScaled * rightSpan)
 
 
-def noteOn(pitch, velocity):
-    midiout.send_message([0x92, pitch, velocity])
+def noteOn(channel, pitch, velocity):
+    midiout.send_message([0x90 | channel, pitch, velocity])
 
-def noteOff(pitch, velocity):
-    midiout.send_message([0x82, pitch, velocity])
+def noteOff(channel, pitch, velocity):
+    midiout.send_message([0x80 | channel, pitch, velocity])
 
-def noteFor(pitch, velocity, _time):
-    noteOn(pitch, velocity)
+def noteFor(channel, pitch, velocity, _time):
+    noteOn(channel, pitch, velocity)
     time.sleep(_time)
-    noteOff(pitch, velocity)
+    noteOff(channel, pitch, velocity)
 
 
 # Use this for the 10/28 Bionic Test
-def noteOnQuickly(pitch, velocity):
-    noteFor(pitch, velocity, 0.02)
-
-# Call noteOn/noteOff
-# Pitch: Left/Right - Use roll
-# Velocity: Magnitude - Use aaReal
-def triggerMidiMusic(leftToRight, magnitude):
-    noteOnQuickly(63, magnitude)
+def noteOnQuickly(channel, pitch, velocity):
+    noteFor(channel, pitch, velocity, 0.02)
 
 def effectOn():
     noteOn(93, 0)
@@ -126,66 +120,66 @@ def effectOnFor(_time):
 
 
 # parameter ranges 0-3
-def effectParameterChange(parameter, value):
-    parameterAddress = 20 + parameter
-    mitiout.send_message([0xB0, parameterAddress, value])
+# def effectParameterChange(parameter, value):
+#     parameterAddress = 20 + parameter
+#     mitiout.send_message([0xB0, parameterAddress, value])
 
 
 
-def boomMag(magnitude):
-    effectParameterChange(0, magnitude)
+# def boomMag(magnitude):
+#     effectParameterChange(0, magnitude)
 
-def boomHue(magnitude):
-    effectParameterChange(3, magnitude)
+# def boomHue(magnitude):
+#     effectParameterChange(3, magnitude)
 
-def boomX(magnitude):
-    effectParameterChange(1, magnitude)
+# def boomX(magnitude):
+#     effectParameterChange(1, magnitude)
 
-def boomY(magnitude):
-    effectParameterChange(2, magnitude)
-
-
-
-def boomXY(magX, magY):
-    boomX(magX)
-    boomY(magY)
-
-def boomParam(magnitude, x, y, hue):
-    boomMag(magnitude)
-    boomHue(hue)
-    boomXY(x, y)
+# def boomY(magnitude):
+#     effectParameterChange(2, magnitude)
 
 
 
-def boom(magnitude, x, y, hue):
-    boomParam(magnitude, x, y, hue)
-    note(93, 0)
+# def boomXY(magX, magY):
+#     boomX(magX)
+#     boomY(magY)
 
-
-def boomRandom():
-    boom(random.randint(60, 100), random.randint(0, 127), random.randint(0, 127), random.randint(0, 127))
-
-def boomRandom(magnitude, hue):
-    boom(magnitude, random.randint(0, 127), random.randint(0, 127), hue)
+# def boomParam(magnitude, x, y, hue):
+#     boomMag(magnitude)
+#     boomHue(hue)
+#     boomXY(x, y)
 
 
 
-def previousEffect():
-    shiftOn()
-    note(97, 0)
-    shiftOff()
-
-def nextEffect():
-    shiftOn()
-    note(96, 0)
-    shiftOff()
+# def boom(magnitude, x, y, hue):
+#     boomParam(magnitude, x, y, hue)
+#     note(93, 0)
 
 
-def shiftOn():
-    noteOn(98, 0)
+# def boomRandom():
+#     boom(random.randint(60, 100), random.randint(0, 127), random.randint(0, 127), random.randint(0, 127))
 
-def shiftOff():
-    noteOff(98, 0)
+# def boomRandom(magnitude, hue):
+#     boom(magnitude, random.randint(0, 127), random.randint(0, 127), hue)
+
+
+
+# def previousEffect():
+#     shiftOn()
+#     note(97, 0)
+#     shiftOff()
+
+# def nextEffect():
+#     shiftOn()
+#     note(96, 0)
+#     shiftOff()
+
+
+# def shiftOn():
+#     noteOn(98, 0)
+
+# def shiftOff():
+#     noteOff(98, 0)
 
 
 
@@ -207,6 +201,7 @@ def printReports(reports):
 
 def getReportsFromXbeeMessage(response):
     global magnitudeCutoff, timeMIDIsend, allReports, numberStoredEntries
+    print "response = ", response
     packed_data = response['rf_data']
         # print "Size of packed_data ", len(packed_data)
 
@@ -215,11 +210,13 @@ def getReportsFromXbeeMessage(response):
     reports = []
     messages = []
     unitID = response['source_addr'] # need to convert to string?
+    # print "reponse keys = ", response.keys()
+    # print "unitID = ", repr(unitID)
     timeStamp = datetime.now()
 
     while unpacked_data is not True and unpacked_data is not None:
         (unpacked_data, packed_data) = tinypacks.unpack(packed_data)
-        print "Unpacked Data: ", unpacked_data
+        # print "Unpacked Data: ", unpacked_data
         if unpacked_data is not True and unpacked_data is not None:
             reportToStore = {}
             reportToStore = unpacked_data
@@ -230,6 +227,7 @@ def getReportsFromXbeeMessage(response):
     print "Unpacked all data into reports / messages"
     print "# Reports = ", len(reports)
     print "# Messages = ", len(messages)
+    print reports
     print ""
 
     return reports
@@ -255,13 +253,22 @@ def filter_midiMusicTrigger(unitID, messages):
         filter_midiMusic_timesSent[unitID] = datetime.now()
 
     timeSinceLastTrigger = datetime.now() - filter_midiMusic_timesSent[unitID]
-    print messages
-    # if (unicode("lvl") == messages["pNam"]):
-    #     aaRealPercent = messages["val"]
-    #     if ( timeSinceLastTrigger ) > timedelta(milliseconds=30):
-    #         if aaRealPercent > magnitudeCutoff:
-    #             triggerMidiMusic( 63, translate(aaRealPercent, 0, 1, 60, 127) )
-    #             filter_midiMusic_timesSent[unitID] = datetime.now()
+
+    aaRealPercent = 0
+    anglePercent = 0
+
+    # print messages
+    for message in messages:
+        if (unicode("lvl") == message["pNam"]):
+            aaRealPercent = message["val"]
+        elif (unicode("hue") == message["pNam"]):
+            anglePercent = message["val"]
+
+    if ( timeSinceLastTrigger ) > timedelta(milliseconds=30) and aaRealPercent > magnitudeCutoff:
+        noteOnQuickly( map(ord, unitID)[1], 0, translate(aaRealPercent, 0, 1, 50, 127) )
+        noteOnQuickly( map(ord, unitID)[1], 1, translate(anglePercent, 0, 1, 50, 127) )
+        filter_midiMusic_timesSent[unitID] = datetime.now()
+        print "MIDI TRIGGER!"
 
 
 def filter_rollParameter(unitID, message):
@@ -277,15 +284,16 @@ def filter_rollParameter(unitID, message):
 
 def determineMidiFromReports(reports):
     for report in reports:
-        for messages in report["msg"]:
-            unitID = report["unitID"]
+        # for messages in report["msg"]:
+        unitID = report["unitID"]
+        messages = report["msg"]
 
-            # LIST OF FILTER HERE!!!
-            print unitID, " - Messages into filter: ", messages
-            filter_midiMusicTrigger( unitID, messages )
+        # LIST OF FILTER HERE!!!
+        # print repr(unitID), " - Messages into filter: ", messages
+
+        filter_midiMusicTrigger( unitID, messages )
                         
-
-    print ""
+    # print ""
 
 
 
