@@ -42,6 +42,25 @@ print ""
 
 
 
+# --------------------------------------------
+# --------------------------------------------
+# x- INITIALIZE INTERNAL STUFF
+
+# Main data structure for communications tracking
+global allReports, numberStoredEntries
+allReports = []
+numberStoredEntries = 5000
+
+global hueNow, magnitudeCutoff, timeMIDIsend
+hueNow = 0
+magnitudeCutoff = 0.1
+
+huePercent = 0
+
+
+timeMIDIsend = {}
+
+
 
 
 
@@ -72,27 +91,27 @@ def translate(value, leftMin, leftMax, rightMin, rightMax):
     return rightMin + (valueScaled * rightSpan)
 
 
-def noteOn(address, value):
-    midiout.send_message([0x92, address, value])
+def noteOn(pitch, velocity):
+    midiout.send_message([0x92, pitch, velocity])
 
-def noteOff(address, value):
-    midiout.send_message([0x82, address, value])
+def noteOff(pitch, velocity):
+    midiout.send_message([0x82, pitch, velocity])
 
-def noteFor(address, value, _time):
-    noteOn(address, value)
+def noteFor(pitch, velocity, _time):
+    noteOn(pitch, velocity)
     time.sleep(_time)
-    noteOff(address, value)
+    noteOff(pitch, velocity)
 
 
 # Use this for the 10/28 Bionic Test
-def noteOnQuickly(address, value):
-    noteFor(address, value, 0.02)
+def noteOnQuickly(pitch, velocity):
+    noteFor(pitch, velocity, 0.02)
 
 # Call noteOn/noteOff
 # Pitch: Left/Right - Use roll
 # Velocity: Magnitude - Use aaReal
-def triggerMidiMusic(pitch, velocity):
-    noteOnQuickly(pitch, velocity)
+def triggerMidiMusic(leftToRight, magnitude):
+    noteOnQuickly(leftToRight, magnitude)
 
 def effectOn():
     noteOn(93, 0)
@@ -172,123 +191,119 @@ def shiftOff():
 
 
 
-
-
-
-
-
-
-
-# --------------------------------------------
-# --------------------------------------------
-# x- INITIALIZE INTERNAL STUFF
-
-# Main data structure for communications tracking
-masterList = {}
-numberStoredEntries = 20
-
-global hueNow, magnitudeCutoff, timeMIDIsend
-hueNow = 0
-magnitudeCutoff = 0.5
-
-huePercent = 0
-
-timeMIDIsend = datetime.now()
-print timeMIDIsend
-
-
-
-
-
 # --------------------------------------------
 # --------------------------------------------
 # x- INITIALIZE XBEE
 # x- SET XBEE CALLBACK TO MIDI OUT
 # SET XBEE CALLBACK TO INTERNAL STUFF
 
+def printReports(reports):
+    for report in reports:
+        print "-Start Report-"
+        for message in report['msg']:
+            print "message ", message
+        print "-End Report-"
+
+
+def getReportsFromXbeeMessage(response):
+    global magnitudeCutoff, timeMIDIsend, allReports, numberStoredEntries
+    packed_data = response['rf_data']
+        # print "Size of packed_data ", len(packed_data)
+
+    # Initialize unpacked_data so the while loop will execute at least once
+    unpacked_data = 0
+    reports = []
+    messages = []
+    unitID = response['source_addr'] # need to convert to string?
+    timeStamp = datetime.now()
+
+    while unpacked_data is not None:
+        try:
+            unpacked_data, packed_data = tinypacks.unpack(packed_data)
+        except:
+            print "Exit unpacking loop"
+            break
+        else:
+            if unpacked_data is not None:
+                # print unpacked_data
+                reportToStore = unpacked_data
+                reportToStore['time'] = datetime.now()
+                reportToStore['unitID'] = unitID
+                reports.insert( 0, reportToStore )
+    print "Unpacked all data into reports / messages"
+    print "# Reports = ", len(reports)
+    print "# Messages = ", len(messages)
+    print ""
+
+    return reports
+
+
+global filter_midiMusic_timesSent
+filter_midiMusic_timesSent = {}
+
+def filter_midiMusicTrigger(unitID, message):
+    global filter_midiMusic_timesSent
+
+    # If this is the first time receiving something from this xBee, add it to the timeMIDIsend dictionary
+    if unitID not in filter_midiMusic_timesSent:
+        filter_midiMusic_timesSent[unitID] = datetime.now()
+
+    timeSinceLastTrigger = datetime.now() - filter_midiMusic_timesSent[unitID]
+    if (unicode("lvl") == message["pNam"]):
+        aaRealPercent = message["val"]
+        if ( timeSinceLastTrigger ) > timedelta(milliseconds=30):
+            if aaRealPercent > magnitudeCutoff:
+                triggerMidiMusic( 63, translate(aaRealPercent, 0, 1, 60, 127) )
+                filter_midiMusic_timesSent[unitID] = datetime.now()
+
+
+
+
+
+
+
+
+def determineMidiFromReports(reports):
+    for report in reports:
+        for message in report["msg"]:
+            unitID = report["unitID"]
+
+            # LIST OF FILTER HERE!!!
+            print "Message into filter: ", message
+            filter_midiMusicTrigger( unitID, message )
+                        
+
+    print ""
+
+
+
+
+
+
+
 
 # MIDI OUT and notes must be enabled prior to this...
 def message_received(response):
-    global magnitudeCutoff, timeMIDIsend
-    try:
+    global magnitudeCutoff, timeMIDIsend, allReports, numberStoredEntries
 
-        print "--------------------"
-        print "XBEE Message RECEIVED"        
+    print "--------------------"
+    print "XBEE Message RECEIVED"        
 
-        packed_data = response['rf_data']
-        # print "Size of packed_data ", len(packed_data)
+    # Get the reports (all messages in a single transmission) from the xBee packet
+    reports = getReportsFromXbeeMessage(response)
+    printReports(reports)
 
-        # Initialize unpacked_data so the while loop will execute at least once
-        unpacked_data = 0
-        reports = []
-        messages = []
+    # Process the report and trigger actions
+    determineMidiFromReports(reports)
 
-        while unpacked_data is not None:
-            try:
-                unpacked_data, packed_data = tinypacks.unpack(packed_data)
-            except:
-                print "Exit unpacking loop"
-                break
-            else:
-                if unpacked_data is not None:
-                    # print unpacked_data
-                    reports.append(unpacked_data)
+    # Store it when done
+    # check to see if queue is too big
+    
+    for report in reports:
+        while len(allReports) >= numberStoredEntries:
+            allReports.pop() # remove last entry
+        allReports.insert( 0, report )
 
-        print "Num of Reports = ", len(reports)
-        for report in reports:
-            print "-Start Report-"
-            for message in report['msg']:
-                print "message ", message
-                messages.append(message)
-            print "-End Report-"
-        print "Unpacked all data"
-        print ""
-
-        # # tinypacks data structure, date added
-        # unpacked_data['time'] = datetime.now()
-        # unitID = response['source_addr'] # need to convert to string?
-
-        # ## Add to master list, with unitID as key
-        # # if masterList does not contain unitID, do something different
-        # if not unitID in masterList.keys():
-        #     masterList[unitID] = []
-
-        # # check to see if queue is too big
-        # if len(masterList[unitID]) >= numberStoredEntries:
-        #     masterList[unitID].pop() # remove last entry
-
-        # # insert most recent entry
-        # masterList[unitID].insert(0, unpacked_data)
-
-
-        try:
-            # Only select the first message for now
-            message = messages[0]
-            # print "messages[0] : ", message
-
-            if unicode("lvl" ) == message["pNam"]:
-                aaRealPercent = message["val"]
-                # print "ooga"
-                # try:
-                #     timeMIDIsend
-                #     magnitudeCutoff
-                # except:
-                #     print "issue with timeMIDIsend or magnitudeCutoff"
-                # print "booga"
-                if ( datetime.now() - timeMIDIsend ) > timedelta(milliseconds=30):
-                    # print "wooga"
-                    if aaRealPercent > magnitudeCutoff:
-                        triggerMidiMusic( 63, translate(aaRealPercent, 0, 1, 60, 127) )
-                        # triggerMidiMusic( 63, 127 )
-                        print "MIDI Music TRIGGER!"
-                        timeMIDIsend = datetime.now()
-
-            print ""
-        except:
-            print "(IGNORABLE) ERROR! Triggering interaction engine from XBEE message received"
-
-    except:
-        print "ERROR! Parsing error in message_received" 
     print "--------------------"
     print ""
 
