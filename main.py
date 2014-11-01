@@ -110,7 +110,7 @@ def noteOnQuickly(pitch, velocity):
 # Call noteOn/noteOff
 # Pitch: Left/Right - Use roll
 # Velocity: Magnitude - Use aaReal
-def triggerMidiMusic(63, magnitude):
+def triggerMidiMusic(leftToRight, magnitude):
     noteOnQuickly(63, magnitude)
 
 def effectOn():
@@ -211,25 +211,22 @@ def getReportsFromXbeeMessage(response):
         # print "Size of packed_data ", len(packed_data)
 
     # Initialize unpacked_data so the while loop will execute at least once
-    unpacked_data = 0
+    unpacked_data = {}
     reports = []
     messages = []
     unitID = response['source_addr'] # need to convert to string?
     timeStamp = datetime.now()
 
-    while unpacked_data is not None:
-        try:
-            unpacked_data, packed_data = tinypacks.unpack(packed_data)
-        except:
-            print "Exit unpacking loop"
-            break
-        else:
-            if unpacked_data is not None:
-                # print unpacked_data
-                reportToStore = unpacked_data
-                reportToStore['time'] = datetime.now()
-                reportToStore['unitID'] = unitID
-                reports.insert( 0, reportToStore )
+    while unpacked_data is not True and unpacked_data is not None:
+        (unpacked_data, packed_data) = tinypacks.unpack(packed_data)
+        print "Unpacked Data: ", unpacked_data
+        if unpacked_data is not True and unpacked_data is not None:
+            reportToStore = {}
+            reportToStore = unpacked_data
+            reportToStore["time"] = datetime.now()
+            reportToStore["unitID"] = unitID
+            reports.insert( 0, reportToStore )
+            print "Report stored!"
     print "Unpacked all data into reports / messages"
     print "# Reports = ", len(reports)
     print "# Messages = ", len(messages)
@@ -250,7 +247,7 @@ def getReportsFromXbeeMessage(response):
 global filter_midiMusic_timesSent
 filter_midiMusic_timesSent = {}
 
-def filter_midiMusicTrigger(unitID, message):
+def filter_midiMusicTrigger(unitID, messages):
     global filter_midiMusic_timesSent
 
     # If this is the first time receiving something from this xBee, add it to the timeMIDIsend dictionary
@@ -258,12 +255,13 @@ def filter_midiMusicTrigger(unitID, message):
         filter_midiMusic_timesSent[unitID] = datetime.now()
 
     timeSinceLastTrigger = datetime.now() - filter_midiMusic_timesSent[unitID]
-    if (unicode("lvl") == message["pNam"]):
-        aaRealPercent = message["val"]
-        if ( timeSinceLastTrigger ) > timedelta(milliseconds=30):
-            if aaRealPercent > magnitudeCutoff:
-                triggerMidiMusic( 63, translate(aaRealPercent, 0, 1, 60, 127) )
-                filter_midiMusic_timesSent[unitID] = datetime.now()
+    print messages
+    # if (unicode("lvl") == messages["pNam"]):
+    #     aaRealPercent = messages["val"]
+    #     if ( timeSinceLastTrigger ) > timedelta(milliseconds=30):
+    #         if aaRealPercent > magnitudeCutoff:
+    #             triggerMidiMusic( 63, translate(aaRealPercent, 0, 1, 60, 127) )
+    #             filter_midiMusic_timesSent[unitID] = datetime.now()
 
 
 def filter_rollParameter(unitID, message):
@@ -279,12 +277,12 @@ def filter_rollParameter(unitID, message):
 
 def determineMidiFromReports(reports):
     for report in reports:
-        for message in report["msg"]:
+        for messages in report["msg"]:
             unitID = report["unitID"]
 
             # LIST OF FILTER HERE!!!
-            print "Message into filter: ", message
-            filter_midiMusicTrigger( unitID, message )
+            print unitID, " - Messages into filter: ", messages
+            filter_midiMusicTrigger( unitID, messages )
                         
 
     print ""
