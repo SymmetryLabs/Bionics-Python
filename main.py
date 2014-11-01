@@ -110,8 +110,8 @@ def noteOnQuickly(pitch, velocity):
 # Call noteOn/noteOff
 # Pitch: Left/Right - Use roll
 # Velocity: Magnitude - Use aaReal
-def triggerMidiMusic(leftToRight, magnitude):
-    noteOnQuickly(leftToRight, magnitude)
+def triggerMidiMusic(63, magnitude):
+    noteOnQuickly(63, magnitude)
 
 def effectOn():
     noteOn(93, 0)
@@ -238,6 +238,15 @@ def getReportsFromXbeeMessage(response):
     return reports
 
 
+
+
+# ***************************************
+# ***************************************
+# *************   FILTERS   *************
+# ***************************************
+# ***************************************
+
+
 global filter_midiMusic_timesSent
 filter_midiMusic_timesSent = {}
 
@@ -256,6 +265,11 @@ def filter_midiMusicTrigger(unitID, message):
                 triggerMidiMusic( 63, translate(aaRealPercent, 0, 1, 60, 127) )
                 filter_midiMusic_timesSent[unitID] = datetime.now()
 
+
+def filter_rollParameter(unitID, message):
+    if (unicode("hue") == message["pNam"]):
+        roll = message["hue"]
+        # WIP - WRITE PROPER MIDI MESSAGE HERE!!!
 
 
 
