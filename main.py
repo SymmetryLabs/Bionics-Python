@@ -53,7 +53,7 @@ numberStoredEntries = 5000
 
 global hueNow, magnitudeCutoff, timeMIDIsend
 hueNow = 0
-magnitudeCutoff = 0.1
+magnitudeCutoff = 0.3
 
 huePercent = 0
 
@@ -201,7 +201,7 @@ def printReports(reports):
 
 def getReportsFromXbeeMessage(response):
     global magnitudeCutoff, timeMIDIsend, allReports, numberStoredEntries
-    print "response = ", response
+    # print "response = ", response
     packed_data = response['rf_data']
         # print "Size of packed_data ", len(packed_data)
 
@@ -223,12 +223,12 @@ def getReportsFromXbeeMessage(response):
             reportToStore["time"] = datetime.now()
             reportToStore["unitID"] = unitID
             reports.insert( 0, reportToStore )
-            print "Report stored!"
-    print "Unpacked all data into reports / messages"
-    print "# Reports = ", len(reports)
-    print "# Messages = ", len(messages)
-    print reports
-    print ""
+    #         print "Report stored!"
+    # print "Unpacked all data into reports / messages"
+    # print "# Reports = ", len(reports)
+    # print "# Messages = ", len(messages)
+    # print reports
+    # print ""
 
     return reports
 
@@ -270,7 +270,7 @@ def filter_midiMusicTrigger(unitID, messages):
         noteOnQuickly( channel, 0, translate(aaRealPercent, 0, 1, 50, 127) )
         noteOnQuickly( channel, 1, translate(anglePercent, 0, 1, 50, 127) )
         filter_midiMusic_timesSent[unitID] = datetime.now()
-        print "MIDI TRIGGER!"
+        print "MIDI TRIGGER! Channel = ", channel 
 
 
 def filter_rollParameter(unitID, message):
@@ -308,26 +308,25 @@ def determineMidiFromReports(reports):
 def message_received(response):
     global magnitudeCutoff, timeMIDIsend, allReports, numberStoredEntries
 
-    print "--------------------"
-    print "XBEE Message RECEIVED"        
+    # print "--------------------"
+    # print "XBEE Message RECEIVED"        
 
     # Get the reports (all messages in a single transmission) from the xBee packet
     reports = getReportsFromXbeeMessage(response)
-    printReports(reports)
+    # printReports(reports)
 
     # Process the report and trigger actions
     determineMidiFromReports(reports)
 
     # Store it when done
     # check to see if queue is too big
-    
     for report in reports:
         while len(allReports) >= numberStoredEntries:
             allReports.pop() # remove last entry
         allReports.insert( 0, report )
 
-    print "--------------------"
-    print ""
+    # print "--------------------"
+    # print ""
 
 # Attempt to make this variable static to the function
 # message_received.timeMIDIsend = datetime.now()
