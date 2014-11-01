@@ -265,8 +265,10 @@ def filter_midiMusicTrigger(unitID, messages):
             anglePercent = message["val"]
 
     if ( timeSinceLastTrigger ) > timedelta(milliseconds=30) and aaRealPercent > magnitudeCutoff:
-        noteOnQuickly( map(ord, unitID)[1], 0, translate(aaRealPercent, 0, 1, 50, 127) )
-        noteOnQuickly( map(ord, unitID)[1], 1, translate(anglePercent, 0, 1, 50, 127) )
+        unitIDtoChannel = {'\x00\x00' : 3, '\x00\r' : 4}
+        channel = unitIDtoChannel[unitID]
+        noteOnQuickly( channel, 0, translate(aaRealPercent, 0, 1, 50, 127) )
+        noteOnQuickly( channel, 1, translate(anglePercent, 0, 1, 50, 127) )
         filter_midiMusic_timesSent[unitID] = datetime.now()
         print "MIDI TRIGGER!"
 
@@ -509,6 +511,7 @@ while True:
         # Put broadcast data into structure and send out to units
         # 
         time.sleep(0.05)
+        # print "filterTimes", filter_midiMusic_timesSent
 
         # print "magnitudeCutoff", magnitudeCutoff
         # print "----------"
