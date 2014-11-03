@@ -215,7 +215,17 @@ def getReportsFromXbeeMessage(response):
     timeStamp = datetime.now()
 
     while unpacked_data is not True and unpacked_data is not None:
-        (unpacked_data, packed_data) = tinypacks.unpack(packed_data)
+        try:
+            (unpacked_data, packed_data) = tinypacks.unpack(packed_data)
+        except:
+            e = sys.exc_info()[0]
+            print e
+            print ""
+            print "ERROR DIAGNOSTICS"
+            print "unpacked_data ", unpacked_data
+            print "packed_data", packed_data
+            print ""
+            break
         # print "Unpacked Data: ", unpacked_data
         if unpacked_data is not True and unpacked_data is not None:
             reportToStore = {}
@@ -265,7 +275,7 @@ def filter_midiMusicTrigger(unitID, messages):
             anglePercent = message["val"]
 
     if ( timeSinceLastTrigger ) > timedelta(milliseconds=30) and aaRealPercent > magnitudeCutoff:
-        unitIDtoChannel = {'\x00\x00' : 3, '\x00\r' : 4}
+        unitIDtoChannel = {'\x00\x00' : 3, '\x00\r' : 4, '\x00\n' : 1, '\x00\x0B' : 2}
         channel = unitIDtoChannel[unitID]
         noteOnQuickly( channel, 0, translate(aaRealPercent, 0, 1, 50, 127) )
         noteOnQuickly( channel, 1, translate(anglePercent, 0, 1, 50, 127) )
