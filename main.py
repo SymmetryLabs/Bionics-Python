@@ -529,6 +529,9 @@ while True:
     except KeyboardInterrupt:
         print "KeyboardInterrupt EXCEPT"
         break
+    except IOError:
+        print "IOError EXCEPT"
+        break
     except:
         print "Generic EXCEPT"
         break
