@@ -201,9 +201,9 @@ def printReports(reports):
 
 def getReportsFromXbeeMessage(response):
     global magnitudeCutoff, timeMIDIsend, allReports, numberStoredEntries
-    # print "response = ", response
+    print "response = ", response
     packed_data = response['rf_data']
-        # print "Size of packed_data ", len(packed_data)
+    print "Size of packed_data ", len(packed_data)
 
     # Initialize unpacked_data so the while loop will execute at least once
     unpacked_data = {}
@@ -344,7 +344,7 @@ def message_received(response):
 
 
 
-PORTS = ['/dev/tty.usbserial-AM01VFA7', '/dev/tty.usbserial-A90FNX5T']
+PORTS = ['/dev/tty.usbserial-AM01VFA7', '/dev/tty.usbserial-A90FNX5T', '/dev/tty.usbserial-A94RVX9H']
 BAUD_RATE = 115200
 # Iterate through possible Serial Port Names looking for connected xBee Explorer
 for port in PORTS:
