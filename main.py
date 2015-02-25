@@ -227,9 +227,9 @@ except liblo.AddressError, err:
 
 
 def forwardOSCMessage(reports):
-    print "Report[0]: ", reports[0]
+    # print "Report[0]: ", reports[0]
     msg = reports[0]["msg"]
-    print "Forwarding OSC Message: ", msg
+    print "Forwarding OSC Message: ", reports[0]["msg"]
     liblo.send(targetOSC, msg)
 
 
@@ -297,6 +297,7 @@ def getReportsFromXbeeMessage(response):
     return reports
 
 
+
 def getOSCFromXbeeMessage(response):
     reports = []
 
@@ -313,7 +314,7 @@ def getOSCFromXbeeMessage(response):
             thisData = (type, deserializedMessage.pop(0))
             data.append( thisData )
 
-    print "OSC Data List: ", data
+    print "Parsed OSC byte stream: ", addr, ", ", data
 
     msg = liblo.Message(addr)
     for entry in data:
@@ -415,7 +416,7 @@ def message_received(response):
     # printReports(reports)
 
     reports = getOSCFromXbeeMessage(response)
-    print "In message_received: ", reports
+    # print "In message_received: ", reports
 
     # Pass OSC message through to Processing
     forwardOSCMessage(reports)
