@@ -810,6 +810,7 @@ try:
     print "Bionic-Python Exiting..."
     xbee.halt()
     ser.close()
+    server.stop()
     midiin.close_port()
     del midiin
     midiout.close_port()
