@@ -14,6 +14,10 @@ import random
 from rtmidi.midiutil import open_midiport
 log = logging.getLogger('test_midiin_callback')
 
+# Import OSC stuff
+from liblo import *
+import liblo
+
 
 # Initialize xbee
 from xbee import XBee
@@ -187,6 +191,56 @@ def effectOnFor(_time):
 
 # --------------------------------------------
 # --------------------------------------------
+# x- INITIALIZE OSC SERVER and CLIENT
+# x- WRITE ALL MIDI FUNCTIONS
+
+class MyServer(ServerThread):
+    def __init__(self):
+        ServerThread.__init__(self, 1234)
+
+    @make_method('/foo', 'ifs')
+    def foo_callback(self, path, args):
+        i, f, s = args
+        print "received message '%s' with arguments: %d, %f, %s" % (path, i, f, s)
+
+    @make_method(None, None)
+    def fallback(self, path, args):
+        print "received unknown message '%s'" % path
+
+try:
+    server = MyServer()
+except ServerError, err:
+    print str(err)
+    sys.exit()
+
+server.start()
+
+
+# send all messages to port 1234 on the local machine
+try:
+    targetOSC = liblo.Address(1234)
+except liblo.AddressError, err:
+    print str(err)
+    sys.exit()
+
+# send message "/foo/message1" with int, float and string arguments
+liblo.send(targetOSC, "/foo/message1", 123, 456.789, "test")
+
+# we can also build a message object first...
+msg = liblo.Message("/foo/blah")
+# ... append arguments later...
+msg.add(123, "foo")
+# ... and then send it
+liblo.send(targetOSC, msg)
+
+
+# WRITE FUNCTIONS FOR SENDING AND PACKING STUFF
+# WHAT DO THE MESSAGES I SEND FORTH LOOK LIKE?
+
+
+
+# --------------------------------------------
+# --------------------------------------------
 # x- INITIALIZE XBEE
 # x- SET XBEE CALLBACK TO MIDI OUT
 # SET XBEE CALLBACK TO INTERNAL STUFF
@@ -239,6 +293,26 @@ def getReportsFromXbeeMessage(response):
     # print "# Messages = ", len(messages)
     # print reports
     # print ""
+
+    return reports
+
+
+def getOSCFromXbeeMessage(response):
+    reports = []
+
+    packed_data = response['rf_data']
+    print "xBee payload = ", packed_data
+    print "Size of xBee payload ", len(packed_data)
+
+    unitID = response['source_addr'] # need to convert to string?
+    timeStamp = datetime.now()
+
+    reportToStore = {}
+    reportToStore["msg"] = packed_data
+    reportToStore["time"] = datetime.now()
+    reportToStore["unitID"] = unitID
+
+    reports.insert( 0, reportToStore )
 
     return reports
 
@@ -318,15 +392,18 @@ def determineMidiFromReports(reports):
 def message_received(response):
     global magnitudeCutoff, timeMIDIsend, allReports, numberStoredEntries
 
-    # print "--------------------"
-    # print "XBEE Message RECEIVED"        
+    print "--------------------"
+    print "XBEE Message RECEIVED"        
 
     # Get the reports (all messages in a single transmission) from the xBee packet
-    reports = getReportsFromXbeeMessage(response)
+    # reports = getReportsFromXbeeMessage(response)
     # printReports(reports)
 
+    reports = getOSCFromXbeeMessage(response)
+    # print "In message_received: ", reports
+
     # Process the report and trigger actions
-    determineMidiFromReports(reports)
+    # determineMidiFromReports(reports)
 
     # Store it when done
     # check to see if queue is too big
@@ -335,8 +412,8 @@ def message_received(response):
             allReports.pop() # remove last entry
         allReports.insert( 0, report )
 
-    # print "--------------------"
-    # print ""
+    print "--------------------"
+    print ""
 
 # Attempt to make this variable static to the function
 # message_received.timeMIDIsend = datetime.now()
