@@ -66,7 +66,7 @@ huePercent = 0
 
 class MyServer(ServerThread):
     def __init__(self):
-        ServerThread.__init__(self, 1234)
+        ServerThread.__init__(self, 9049)
 
     @make_method('/foo', 'ifs')
     def foo_callback(self, path, args):
@@ -88,9 +88,9 @@ except ServerError, err:
 server.start()
 
 
-# send all messages to port 1234 on the local machine
+# send all messages to port 9050 on the local machine
 try:
-    targetOSC = liblo.Address(1234)
+    targetOSC = liblo.Address(9050)
 except liblo.AddressError, err:
     print str(err)
     sys.exit()
