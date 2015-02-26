@@ -112,7 +112,6 @@ def forwardOSCMessage(reports):
 # --------------------------------------------
 # --------------------------------------------
 # x- INITIALIZE XBEE
-# x- SET XBEE CALLBACK TO MIDI OUT
 # SET XBEE CALLBACK TO INTERNAL STUFF
 
 def printReports(reports):
@@ -141,11 +140,31 @@ def getOSCFromXbeeMessage(response):
 
     print "Parsed OSC byte stream: ", addr, ", ", data
 
+    # Add unit number to the address string
+    # for byte in addr:
+        # addr = 
+
+    unitID = response['source_addr'] # need to convert to string?
+    print "unitID: ", repr(unitID)
+    # REALLY need to replace this with something even remotely slick... ;)
+    if unitID == '\x00\x0A':
+        unitID = 'A'
+    elif unitID == '\x00\x0B':
+        unitID = 'B'
+    elif unitID == '\x00\x0C':
+        unitID = 'C'
+    elif unitID == '\x00\x0D':
+        unitID = 'D'
+    else:
+        print "Address of unit not detected"
+
+
+    addr = 'unit/' + unitID + addr
+
     msg = liblo.Message(addr)
     for entry in data:
         msg.add(entry)
 
-    unitID = response['source_addr'] # need to convert to string?
     timeStamp = datetime.now()
 
     reportToStore = {}
@@ -161,7 +180,6 @@ def getOSCFromXbeeMessage(response):
 
 
 
-# MIDI OUT and notes must be enabled prior to this...
 def message_received(response):
     global magnitudeCutoff, timeMIDIsend, allReports, numberStoredEntries
 
@@ -175,7 +193,6 @@ def message_received(response):
     forwardOSCMessage(reports)
 
     # Process the report and trigger actions
-    # determineMidiFromReports(reports)
 
     # Store it when done
     # check to see if queue is too big
@@ -187,8 +204,6 @@ def message_received(response):
     print "--------------------"
     print ""
 
-# Attempt to make this variable static to the function
-# message_received.timeMIDIsend = datetime.now()
 
 
 
