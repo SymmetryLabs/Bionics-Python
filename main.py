@@ -442,7 +442,10 @@ while True:
         # NEED TO BUILD INTO PROPER MODEL LOGIC STRUCTURE
         # Put broadcast data into structure and send out to units
         # 
-        time.sleep(0.05)
+        time.sleep(1)
+
+        # Send test OSC messages to units
+        sendBroadcast(xbee, OSC_Tx_Test)
         # print "filterTimes", filter_midiMusic_timesSent
 
         # print "magnitudeCutoff", magnitudeCutoff
