@@ -9,8 +9,9 @@ import time
 
 
 # Import OSC stuff
-from liblo import *
-import liblo
+from OSC import *
+from simpleOSC import *
+
 
 
 # Initialize xbee
@@ -54,58 +55,6 @@ hueNow = 0
 magnitudeCutoff = 0.3
 
 huePercent = 0
-
-
-
-
-
-# --------------------------------------------
-# --------------------------------------------
-# x- INITIALIZE OSC SERVER and CLIENT
-# x- WRITE ALL MIDI FUNCTIONS
-
-class MyServer(ServerThread):
-    def __init__(self):
-        ServerThread.__init__(self, 9049)
-
-    @make_method('/foo', 'ifs')
-    def foo_callback(self, path, args):
-        i, f, s = args
-        print "received message '%s' with arguments: %d, %f, %s" % (path, i, f, s)
-
-    @make_method(None, None)
-    def fallback(self, path, args):
-        print "received unknown message '%s', '%s'" % (path, args)
-        print path
-        print args
-
-try:
-    server = MyServer()
-except ServerError, err:
-    print str(err)
-    sys.exit()
-
-server.start()
-
-
-# send all messages to port 9050 on the local machine
-try:
-    targetOSC = liblo.Address(9050)
-except liblo.AddressError, err:
-    print str(err)
-    sys.exit()
-
-
-def forwardOSCMessage(reports):
-    # print "Report[0]: ", reports[0]
-    msg = reports[0]["msg"]
-    print "Forwarding OSC Message: ", reports[0]["msg"]
-    liblo.send(targetOSC, msg)
-
-
-
-# WRITE FUNCTIONS FOR SENDING AND PACKING STUFF
-# WHAT DO THE MESSAGES I SEND FORTH LOOK LIKE?
 
 
 
@@ -161,9 +110,9 @@ def getOSCFromXbeeMessage(response):
 
     addr = 'unit/' + unitID + addr
 
-    msg = liblo.Message(addr)
+    msg = OSCMessage(addr)
     for entry in data:
-        msg.add(entry)
+        msg.append(entry)
 
     timeStamp = datetime.now()
 
@@ -225,6 +174,7 @@ try:
     print "Serial Port CREATED"
 except:
     print "ERROR! Serial Port couldn't connect"
+    # sys.exit(0)
     raise OSError
 
 # Initialize xbee object if Serial connetion successful
@@ -245,169 +195,58 @@ def sendBroadcast(xbee, _data):
 
 
 
+
+
+
 # --------------------------------------------
 # --------------------------------------------
-# x- OSC helpers.  MOVE TO PYLIBLO!
+# x- INITIALIZE OSC SERVER and CLIENT
+# x- WRITE ALL MIDI FUNCTIONS
 
 
-import math, string, struct
+# Code taken directly from "app_example.py" in simpleOSC module
+
+# CALLBACK FUNCTIONS
+def checkcheckcheck(addr, tags, data, source):
+    print "CHECK CHECK CHECK..."
+    print "received new osc msg from %s" % getUrlStr(source)
+    print "with addr : %s" % addr
+    print "typetags :%s" % tags
+    print "the actual data is : %s" % data
 
 
-######
-#
-# OSCMessage decoding functions
-#
-######
 
-def _readString(data):
-    """Reads the next (null-terminated) block of data
-    """
-    length   = string.find(data,"\0")
-    nextData = int(math.ceil((length+1) / 4.0) * 4)
-    return (data[0:length], data[nextData:])
+# Initialize client and server
+initOSCClient('127.0.0.1', 9050) # takes args : ip, port
+initOSCServer('127.0.0.1', 9049, 1) # takes args : ip, port, mode --> 0 for basic server, 1 for threading server, 2 for forking server
 
-def _readBlob(data):
-    """Reads the next (numbered) block of data
-    """
-    
-    length   = struct.unpack(">i", data[0:4])[0]
-    nextData = int(math.ceil((length) / 4.0) * 4) + 4
-    return (data[4:length+4], data[nextData:])
 
-def _readInt(data):
-    """Tries to interpret the next 4 bytes of the data
-    as a 32-bit integer. """
-    
-    if(len(data)<4):
-        print "Error: too few bytes for int", data, len(data)
-        rest = data
-        integer = 0
-    else:
-        integer = struct.unpack(">i", data[0:4])[0]
-        rest    = data[4:]
+setOSCHandler('/check', checkcheckcheck)
 
-    return (integer, rest)
+startOSCServer() # and now set it into action
 
-def _readLong(data):
-    """Tries to interpret the next 8 bytes of the data
-    as a 64-bit signed integer.
-     """
-
-    high, low = struct.unpack(">ll", data[0:8])
-    big = (long(high) << 32) + low
-    rest = data[8:]
-    return (big, rest)
-
-def _readTimeTag(data):
-    """Tries to interpret the next 8 bytes of the data
-    as a TimeTag.
-     """
-    high, low = struct.unpack(">ll", data[0:8])
-    if (high == 0) and (low <= 1):
-        time = 0.0
-    else:
-        time = int(high) + float(low / 1e9)
-    rest = data[8:]
-    return (time, rest)
-
-def _readFloat(data):
-    """Tries to interpret the next 4 bytes of the data
-    as a 32-bit float. 
-    """
-    
-    if(len(data)<4):
-        print "Error: too few bytes for float", data, len(data)
-        rest = data
-        float = 0
-    else:
-        float = struct.unpack(">f", data[0:4])[0]
-        rest  = data[4:]
-
-    return (float, rest)
-
-def decodeOSC(data):
-    """Converts a binary OSC message to a Python list. 
-    """
-    table = {"i":_readInt, "f":_readFloat, "s":_readString, "b":_readBlob}
-    decoded = []
-    address,  rest = _readString(data)
-    if address.startswith(","):
-        typetags = address
-        address = ""
-    else:
-        typetags = ""
-
-    if address == "#bundle":
-        time, rest = _readTimeTag(rest)
-        decoded.append(address)
-        decoded.append(time)
-        while len(rest)>0:
-            length, rest = _readInt(rest)
-            decoded.append(decodeOSC(rest[:length]))
-            rest = rest[length:]
-
-    elif len(rest)>0:
-        if not len(typetags):
-            typetags, rest = _readString(rest)
-        decoded.append(address)
-        decoded.append(typetags)
-        if typetags.startswith(","):
-            for tag in typetags[1:]:
-                value, rest = table[tag](rest)
-                decoded.append(value)
-        else:
-            raise OSCError("OSCMessage's typetag-string lacks the magic ','")
-
-    return decoded
+print 'ready to receive and send osc messages ...'
 
 
 
 
-######
-#
-# OSCError classes
-#
-######
+def forwardOSCMessage(reports):
+    # print "Report[0]: ", reports[0]
+    msg = reports[0]["msg"]
+    print "Forwarding OSC Message: ", reports[0]["msg"]
+    # liblo.send(targetOSC, msg)
+    addr = msg[0]
+    data = msg[1::]
+    sendOSCMsg(addr, data)
 
-class OSCError(Exception):
-    """Base Class for all OSC-related errors
-    """
-    def __init__(self, message):
-        self.message = message
 
-    def __str__(self):
-        return self.message
 
-class OSCClientError(OSCError):
-    """Class for all OSCClient errors
-    """
-    pass
+# WRITE FUNCTIONS FOR SENDING AND PACKING STUFF
+# WHAT DO THE MESSAGES I SEND FORTH LOOK LIKE?
 
-class OSCServerError(OSCError):
-    """Class for all OSCServer errors
-    """
-    pass
 
-class NoCallbackError(OSCServerError):
-    """This error is raised (by an OSCServer) when an OSCMessage with an 'unmatched' address-pattern
-    is received, and no 'default' handler is registered.
-    """
-    def __init__(self, pattern):
-        """The specified 'pattern' should be the OSC-address of the 'unmatched' message causing the error to be raised.
-        """
-        self.message = "No callback registered to handle OSC-address '%s'" % pattern
 
-class NotSubscribedError(OSCClientError):
-    """This error is raised (by an OSCMultiClient) when an attempt is made to unsubscribe a host
-    that isn't subscribed.
-    """
-    def __init__(self, addr, prefix=None):
-        if prefix:
-            url = getUrlStr(addr, prefix)
-        else:
-            url = getUrlStr(addr, '')
 
-        self.message = "Target osc://%s is not subscribed" % url            
 
 
 
@@ -442,10 +281,16 @@ while True:
         # NEED TO BUILD INTO PROPER MODEL LOGIC STRUCTURE
         # Put broadcast data into structure and send out to units
         # 
-        time.sleep(1)
+        # time.sleep(1)
 
         # Send test OSC messages to units
-        sendBroadcast(xbee, OSC_Tx_Test)
+        OSC_Tx_Test = OSCMessage("/foo/blah")
+        # ... append arguments later...
+        OSC_Tx_Test.append(123)
+        OSC_Tx_Test.append("moo")
+        # print "Sending OSC Test Message: ", OSC_Tx_Test
+
+        # sendBroadcast(xbee, OSC_Tx_Test)
         # print "filterTimes", filter_midiMusic_timesSent
 
         # print "magnitudeCutoff", magnitudeCutoff
@@ -469,9 +314,10 @@ try:
     print "--------------------"
     print "--------------------"
     print "Bionic-Python Exiting..."
+    closeOSC()
     xbee.halt()
     ser.close()
-    server.stop()
+    closeOSC()
     print "Bionic-Python CLOSED"
     print "--------------------"
     print "--------------------"
