@@ -78,6 +78,20 @@ class MyServer(ServerThread):
         print path
         print args
 
+        # Select out paths where we want to control the units
+        if path == '/eq':
+            print "Path '/eq' found!"
+            # Repack the message...seems like a stupid step
+            msg = liblo.Message(path)
+            for data in args:
+                msg.add(data)
+
+            # Send to a unit of my choice
+            OSCsendBroadcast(xbee, msg)
+
+
+
+
 try:
     server = MyServer()
 except ServerError, err:
@@ -98,7 +112,7 @@ except liblo.AddressError, err:
 def forwardOSCMessage(reports):
     # print "Report[0]: ", reports[0]
     msg = reports[0]["msg"]
-    print "Forwarding OSC Message: ", reports[0]["msg"]
+    # print "Forwarding OSC Message: ", reports[0]["msg"]
     liblo.send(targetOSC, msg)
 
 
@@ -125,8 +139,8 @@ def getOSCFromXbeeMessage(response):
     reports = []
 
     packed_data = response['rf_data']
-    print "xBee payload = ", packed_data
-    print "Size of xBee payload ", len(packed_data)
+    # print "xBee payload = ", packed_data
+    # print "Size of xBee payload ", len(packed_data)
 
     deserializedMessage = decodeOSC(packed_data)
     addr = deserializedMessage.pop(0)
@@ -137,14 +151,14 @@ def getOSCFromXbeeMessage(response):
             thisData = (type, deserializedMessage.pop(0))
             data.append( thisData )
 
-    print "Parsed OSC byte stream: ", addr, ", ", data
+    # print "Parsed OSC byte stream: ", addr, ", ", data
 
     # Add unit number to the address string
     # for byte in addr:
         # addr = 
 
     unitID = response['source_addr'] # need to convert to string?
-    print "unitID: ", repr(unitID)
+    # print "unitID: ", repr(unitID)
     # REALLY need to replace this with something even remotely slick... ;)
     if unitID == '\x00\x0A':
         unitID = 'A'
@@ -182,8 +196,8 @@ def getOSCFromXbeeMessage(response):
 def message_received(response):
     global magnitudeCutoff, timeMIDIsend, allReports, numberStoredEntries
 
-    print "--------------------"
-    print "XBEE Message RECEIVED"        
+    # print "--------------------"
+    # print "XBEE Message RECEIVED"        
 
     reports = getOSCFromXbeeMessage(response)
     # print "In message_received: ", reports
@@ -200,8 +214,8 @@ def message_received(response):
             allReports.pop() # remove last entry
         allReports.insert( 0, report )
 
-    print "--------------------"
-    print ""
+    # print "--------------------"
+    # print ""
 
 
 
@@ -234,13 +248,15 @@ print "XBEE Object CREATED"
 
 # Defined to take in an xbee object
 # Make sure not to send strings longer than 4 letters
-def sendBroadcast(xbee, _data):
+def sendBroadcast(xbee, packed_data):
     print "XBEE Sending Broadcast"
-    packed_data = tinypacks.pack(_data)
     xbee.tx(
         dest_addr = '\xFF\xFF',
-        data = (packed_data) )
+        data = packed_data )
 
+def OSCsendBroadcast(xbee, OSCmsg):
+    # Convert from OSC message to byte stream of packed_data
+    sendBroadcast( xbee, OSCmsg.serialise() )
 
 
 
