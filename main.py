@@ -75,8 +75,8 @@ class MyServer(ServerThread):
     @make_method(None, None)
     def fallback(self, path, args):
         print "received unknown message '%s', '%s'" % (path, args)
-        print path
-        print args
+        # print path
+        # print args
 
         # Select out paths where we want to control the units
         if path == '/eq':
@@ -194,8 +194,9 @@ def getOSCFromXbeeMessage(response):
 
 
 def message_received(response):
-    global magnitudeCutoff, timeMIDIsend, allReports, numberStoredEntries
-
+    global allReports, numberStoredEntries
+    if response['id'] is not 'rx': 
+        print "RESPONSE: ", response['id']
     # print "--------------------"
     # print "XBEE Message RECEIVED"        
 
@@ -250,8 +251,13 @@ print "XBEE Object CREATED"
 # Make sure not to send strings longer than 4 letters
 def sendBroadcast(xbee, packed_data):
     print "XBEE Sending Broadcast"
+    # Have loads of options available here as arguments
+    # frame_id - determines whether or not the target radio returns ACK
+    # options = b'\x01 - disables ACK - determines whether or not local radio retries transmissions
     xbee.tx(
-        dest_addr = '\xFF\xFF',
+        # dest_addr = '\xFF\xFF',
+        dest_addr = b'\x00\x0A',
+        # frame_id = b'\x01',
         data = packed_data )
 
 def OSCsendBroadcast(xbee, OSCmsg):
@@ -288,12 +294,12 @@ print "--------------------"
 print "--------------------"
 print "** Console Reports will trigger as events are received **"
 
-while True:
-    try:
+try:
+    while True:
         # NEED TO BUILD INTO PROPER MODEL LOGIC STRUCTURE
         # Put broadcast data into structure and send out to units
         # 
-        sleep(1)
+        # sleep(1)
 
         # Send test OSC messages to units
         # sendBroadcast(xbee, OSC_Tx_Test)
@@ -302,13 +308,12 @@ while True:
         # print "magnitudeCutoff", magnitudeCutoff
         # print "----------"
         # print
+        pass
 
-    except KeyboardInterrupt:
-        print "KeyboardInterrupt EXCEPT"
-        break
-    except IOError:
-        print "IOError EXCEPT"
-        break
+except KeyboardInterrupt:
+    print "KeyboardInterrupt EXCEPT"
+except IOError:
+    print "IOError EXCEPT"
     # except:
     #     print "Generic EXCEPT"
     #     break
