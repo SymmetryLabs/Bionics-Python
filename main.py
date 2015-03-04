@@ -63,18 +63,26 @@ numberStoredEntries = 5000
 # x- INITIALIZE OSC SERVER and CLIENT
 # x- WRITE ALL MIDI FUNCTIONS
 
+
+def OSCsendBroadcast(xbee, OSCmsg):
+    # Convert from OSC message to byte stream of packed_data
+    sendBroadcast( xbee, OSCmsg.serialise() )
+
+
 class MyServer(ServerThread):
     def __init__(self):
         ServerThread.__init__(self, 9049)
 
-    @make_method('/foo', 'ifs')
-    def foo_callback(self, path, args):
-        i, f, s = args
-        print "received message '%s' with arguments: %d, %f, %s" % (path, i, f, s)
+    # @make_method('/foo', 'ifs')
+    # def foo_callback(self, path, args):
+    #     i, f, s = args
+    #     print "received message '%s' with arguments: %d, %f, %s" % (path, i, f, s)
 
     @make_method(None, None)
     def fallback(self, path, args):
-        print "received unknown message '%s', '%s'" % (path, args)
+        print "--------------------"
+        print "OSC CALLBACK FUNCTION"  
+        print datetime.now(), "received unknown message '%s', '%s'" % (path, args)
         # print path
         # print args
 
@@ -88,6 +96,9 @@ class MyServer(ServerThread):
 
             # Send to a unit of my choice
             OSCsendBroadcast(xbee, msg)
+
+        print "--------------------"
+        print ""
 
 
 
@@ -108,11 +119,11 @@ except liblo.AddressError, err:
     print str(err)
     sys.exit()
 
-
+# Sends OSC messages to Processing port
 def forwardOSCMessage(reports):
     # print "Report[0]: ", reports[0]
     msg = reports[0]["msg"]
-    # print "Forwarding OSC Message: ", reports[0]["msg"]
+    print "Forwarding OSC Message: ", reports[0]["msg"]
     liblo.send(targetOSC, msg)
 
 
@@ -197,8 +208,8 @@ def message_received(response):
     global allReports, numberStoredEntries
     if response['id'] is not 'rx': 
         print "RESPONSE: ", response['id']
-    # print "--------------------"
-    # print "XBEE Message RECEIVED"        
+    print "--------------------"
+    print "XBEE Message RECEIVED"        
 
     reports = getOSCFromXbeeMessage(response)
     # print "In message_received: ", reports
@@ -215,8 +226,8 @@ def message_received(response):
             allReports.pop() # remove last entry
         allReports.insert( 0, report )
 
-    # print "--------------------"
-    # print ""
+    print "--------------------"
+    print ""
 
 
 
@@ -250,6 +261,7 @@ print "XBEE Object CREATED"
 # Defined to take in an xbee object
 # Make sure not to send strings longer than 4 letters
 def sendBroadcast(xbee, packed_data):
+    print "--------------------"
     print "XBEE Sending Broadcast"
     # Have loads of options available here as arguments
     # frame_id - determines whether or not the target radio returns ACK
@@ -260,9 +272,9 @@ def sendBroadcast(xbee, packed_data):
         # frame_id = b'\x01',
         data = packed_data )
 
-def OSCsendBroadcast(xbee, OSCmsg):
-    # Convert from OSC message to byte stream of packed_data
-    sendBroadcast( xbee, OSCmsg.serialise() )
+    print "--------------------"
+    print ""
+
 
 
 
