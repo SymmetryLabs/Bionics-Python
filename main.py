@@ -53,11 +53,6 @@ global allReports, numberStoredEntries
 allReports = []
 numberStoredEntries = 5000
 
-global hueNow, magnitudeCutoff, timeMIDIsend
-hueNow = 0
-magnitudeCutoff = 0.3
-
-huePercent = 0
 
 
 

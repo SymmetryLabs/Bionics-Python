@@ -1,5 +1,0 @@
-{"path": "/foo/message1", "data": [123, 456.78900146484375, "test"], "time": "41.551508"}
-{"path": "/foo/message2", "data": [3.1415, 4398046511104, "x"], "time": "41.551644"}
-{"path": "/foo/blah", "data": [123, "foo"], "time": "41.55173"}
-{"path": "/foo/blob", "data": [[4, 8, 15, 16, 23, 42]], "time": "41.551811"}
-{"path": "/blubb", "data": [123], "time": "43.54859"}

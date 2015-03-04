@@ -1,4 +1,6 @@
 # Program to record motion data from OSC
+# Listens on port 9050 (normally the Processing port)
+# Stores all data in files in tests/data/
 
 from liblo import *
 from OSC import *
@@ -11,13 +13,17 @@ from datetime import datetime, timedelta
 from DataIOClasses import DataWriter, DataReader
 
 startTime = []
-datawriter = DataWriter('testData1.txt')
+
+timestr = strftime("%Y%m%d-%H%M%S")
+filename = 'tests/data/' + timestr + '.txt'
+datawriter = DataWriter(filename)
+startTime = datetime.now()
 
 
 # Threaded server code from "serverThread.py" in pyliblo
 class MyServer(ServerThread):
     def __init__(self):
-        ServerThread.__init__(self, 9049)
+        ServerThread.__init__(self, 9050)
 
     @make_method('/foo', 'ifs')
     def foo_callback(self, path, args):
@@ -49,13 +55,13 @@ startTime = datetime.now()
 
 
 while True:
-	try:
-	    print "loop!"
-	    sleep(5)
+    try:
+        print "loop!"
+        sleep(5)
     except KeyboardInterrupt:
-    	break
+        break
 
 
-try:
-	server.stop()
-	datawriter.close()
+
+server.stop()
+datawriter.close()
