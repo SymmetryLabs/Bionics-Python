@@ -97,6 +97,16 @@ class MyServer(ServerThread):
             # Send to a unit of my choice
             OSCsendBroadcast(xbee, msg)
 
+        if path == '/midi/cc':
+            print "Path '/midi/cc' found!"
+            # Repack the message...seems like a stupid step
+            msg = liblo.Message(path)
+            for data in args:
+                msg.add(data)
+
+            # Send to a unit of my choice
+            OSCsendBroadcast(xbee, msg)
+
         print "--------------------"
         print ""
 
@@ -284,7 +294,6 @@ def sendBroadcast(xbee, packed_data):
 
 
 from pyOSCfunctions import *
-
 
 
 
