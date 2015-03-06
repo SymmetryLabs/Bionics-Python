@@ -219,22 +219,30 @@ def message_received(response):
     if response['id'] is not 'rx': 
         print "RESPONSE: ", response['id']
     print "--------------------"
-    print "XBEE Message RECEIVED"        
+    print "XBEE Message RECEIVED"
 
-    reports = getOSCFromXbeeMessage(response)
-    # print "In message_received: ", reports
+    print "Response: ", response
 
-    # Pass OSC message through to Processing
-    forwardOSCMessage(reports)
+    # If statement is to exclude poorly formatted xbee messages
+    # Usually there is only one sent, when units start (all empty \x00)
+    # Should eliminate this from xBee end...
+    if ',' in response['rf_data']:
+        reports = getOSCFromXbeeMessage(response)
+        print "In message_received: ", reports
 
-    # Process the report and trigger actions
+        # Pass OSC message through to Processing
+        forwardOSCMessage(reports)
 
-    # Store it when done
-    # check to see if queue is too big
-    for report in reports:
-        while len(allReports) >= numberStoredEntries:
-            allReports.pop() # remove last entry
-        allReports.insert( 0, report )
+        # Process the report and trigger actions
+
+        # Store it when done
+        # check to see if queue is too big
+        for report in reports:
+            while len(allReports) >= numberStoredEntries:
+                allReports.pop() # remove last entry
+            allReports.insert( 0, report )
+    else:
+        print "Received bad xBee message"
 
     print "--------------------"
     print ""
