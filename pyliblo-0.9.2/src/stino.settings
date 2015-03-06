@@ -1,0 +1,24 @@
+{
+    "arduino_folder": "/Applications/Arduino.app", 
+    "baudrate": 10, 
+    "board": 1, 
+    "board_option": {
+        "2.0": [
+            0, 
+            0, 
+            0
+        ], 
+        "2.1": [
+            0, 
+            1, 
+            0
+        ]
+    }, 
+    "display_mode": 0, 
+    "full_compilation": false, 
+    "platform": 2, 
+    "platform_name": "Teensy Boards", 
+    "serial_port": 0, 
+    "set_bare_gcc_only": false, 
+    "show_compilation_output": false
+}
