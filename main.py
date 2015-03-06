@@ -285,8 +285,8 @@ def sendBroadcast(xbee, packed_data):
     # frame_id - determines whether or not the target radio returns ACK
     # options = b'\x01 - disables ACK - determines whether or not local radio retries transmissions
     xbee.tx(
-        # dest_addr = '\xFF\xFF',
-        dest_addr = b'\x00\x0A',
+        dest_addr = '\xFF\xFF',
+        # dest_addr = b'\x00\x0A',
         # frame_id = b'\x01',
         data = packed_data )
 
