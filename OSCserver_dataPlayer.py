@@ -39,19 +39,23 @@ except liblo.AddressError, err:
     print str(err)
     sys.exit()
 
-startTime = datetime.now()
 
 # Loop through all messages and send to Processing
-try:
-    for message in messageHistory:
-        msg = liblo.Message(message['path'])
-        for data in message['data']:
-            msg.add(data)
-        while ( (datetime.now()-startTime) < message['time'] ):
-            pass
-        liblo.send(target, msg)
-except KeyboardInterrupt:
-    pass
+while True:
+    try:
+        startTime = datetime.now()
+        print "BEGIN SENDING recorded data"
+        for message in messageHistory:
+            msg = liblo.Message(message['path'])
+            for data in message['data']:
+                msg.add(data)
+            while ( (datetime.now()-startTime) < message['time'] ):
+                pass
+            liblo.send(target, msg)
+        print "END SENDING recorded data"
+        print ""
+    except KeyboardInterrupt:
+        break
 
 
 print "--------------------"
