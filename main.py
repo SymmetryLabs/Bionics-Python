@@ -107,6 +107,33 @@ class MyServer(ServerThread):
             # Send to a unit of my choice
             OSCsendBroadcast(xbee, msg)
 
+        # Messages to change 
+        if path == 'report/acc_r':
+            print "Path 'report/acc_r' found!"
+            msg = liblo.Message(path)
+
+            OSCsendBroadcast(xbee, msg)
+
+        if path == 'report/acc_p':
+            print "Path 'report/acc_p' found!"
+            msg = liblo.Message(path)
+
+            OSCsendBroadcast(xbee, msg)
+
+        if path == 'report/gyr_r':
+            print "Path 'report/gyr_r' found!"
+            msg = liblo.Message(path)
+
+            OSCsendBroadcast(xbee, msg)
+
+        if path == 'report/gyr_p':
+            print "Path 'report/gyr_p' found!"
+            msg = liblo.Message(path)
+
+            OSCsendBroadcast(xbee, msg)
+
+
+
         print "--------------------"
         print ""
 
