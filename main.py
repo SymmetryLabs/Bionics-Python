@@ -64,9 +64,14 @@ numberStoredEntries = 5000
 # x- WRITE ALL MIDI FUNCTIONS
 
 
-def OSCsendBroadcast(xbee, OSCmsg):
+def OSCtoXbeeBroadcast(xbee, OSCmsg):
     # Convert from OSC message to byte stream of packed_data
-    sendBroadcast( xbee, OSCmsg.serialise() )
+    xbeeSendBroadcast( xbee, OSCmsg.serialise() )
+
+
+def OSCtoXbeeMessage(xbee, address, OSCmsg):
+    # Convert from OSC message to byte stream of packed_data
+    xbeeSendMessage( xbee, address, OSCmsg.serialise() )
 
 
 class MyServer(ServerThread):
@@ -95,7 +100,7 @@ class MyServer(ServerThread):
                 msg.add(data)
 
             # Send to a unit of my choice
-            OSCsendBroadcast(xbee, msg)
+            OSCtoXbeeBroadcast(xbee, msg)
 
         if path == '/midi/cc':
             print "Path '/midi/cc' found!"
@@ -105,32 +110,32 @@ class MyServer(ServerThread):
                 msg.add(data)
 
             # Send to a unit of my choice
-            OSCsendBroadcast(xbee, msg)
+            OSCtoXbeeBroadcast(xbee, msg)
 
         # Messages to change 
         if path == 'report/acc_r':
             print "Path 'report/acc_r' found!"
             msg = liblo.Message(path)
 
-            OSCsendBroadcast(xbee, msg)
+            OSCtoXbeeBroadcast(xbee, msg)
 
         if path == 'report/acc_p':
             print "Path 'report/acc_p' found!"
             msg = liblo.Message(path)
 
-            OSCsendBroadcast(xbee, msg)
+            OSCtoXbeeBroadcast(xbee, msg)
 
         if path == 'report/gyr_r':
             print "Path 'report/gyr_r' found!"
             msg = liblo.Message(path)
 
-            OSCsendBroadcast(xbee, msg)
+            OSCtoXbeeBroadcast(xbee, msg)
 
         if path == 'report/gyr_p':
             print "Path 'report/gyr_p' found!"
             msg = liblo.Message(path)
 
-            OSCsendBroadcast(xbee, msg)
+            OSCtoXbeeBroadcast(xbee, msg)
 
 
 
@@ -305,7 +310,7 @@ print "XBEE Object CREATED"
 
 # Defined to take in an xbee object
 # Make sure not to send strings longer than 4 letters
-def sendBroadcast(xbee, packed_data):
+def xbeeSendBroadcast(xbee, packed_data):
     print "--------------------"
     print "XBEE Sending Broadcast"
     # Have loads of options available here as arguments
@@ -320,6 +325,18 @@ def sendBroadcast(xbee, packed_data):
     print "--------------------"
     print ""
 
+
+def xbeeSendMessage(xbee, address, packed_data):
+    print "--------------------"
+    print "XBEE Sending Message to ", address
+    xbee.tx(
+        dest_addr = address,
+        # dest_addr = b'\x00\x0A',
+        # frame_id = b'\x01',
+        data = packed_data )
+
+    print "--------------------"
+    print ""
 
 
 
@@ -358,7 +375,7 @@ try:
         # sleep(1)
 
         # Send test OSC messages to units
-        # sendBroadcast(xbee, OSC_Tx_Test)
+        # xbeeSendBroadcast(xbee, OSC_Tx_Test)
         # print "filterTimes", filter_midiMusic_timesSent
 
         # print "magnitudeCutoff", magnitudeCutoff
