@@ -138,6 +138,12 @@ class MyServer(ServerThread):
 
             OSCtoXbeeBroadcast(xbee, msg)
 
+        if path == 'report/mix':
+            print "Path 'report/mix' found!"
+            msg = liblo.Message(path)
+
+            OSCtoXbeeBroadcast(xbee, msg)
+
 
         # Pass forward messages from Processing to OSC control of specific units
         # Need to update this to select the wildcards
