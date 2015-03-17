@@ -300,7 +300,7 @@ def message_received(response):
 
 
 
-PORTS = ['/dev/tty.usbserial-AM01VFA7', '/dev/tty.usbserial-A90FNX5T', '/dev/tty.usbserial-A94RVX9H']
+PORTS = ['/dev/tty.usbserial-AM01VFA7', '/dev/tty.usbserial-A90FNX5T', '/dev/tty.usbserial-A94RVX9H', '/dev/tty.usbserial-A40360V8']
 BAUD_RATE = 115200
 # Iterate through possible Serial Port Names looking for connected xBee Explorer
 for port in PORTS:
