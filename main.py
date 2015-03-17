@@ -74,6 +74,7 @@ def OSCtoXbeeMessage(xbee, address, OSCmsg):
     xbeeSendMessage( xbee, address, OSCmsg.serialise() )
 
 
+# OSC Server for receiving messages
 class MyServer(ServerThread):
     def __init__(self):
         ServerThread.__init__(self, 9049)
@@ -137,6 +138,16 @@ class MyServer(ServerThread):
 
             OSCtoXbeeBroadcast(xbee, msg)
 
+
+        # Pass forward messages from Processing to OSC control of specific units
+        # Need to update this to select the wildcards
+        if path == 'unit/*/anim/hue':
+            print "Path 'unit/*/anim/hue' found!"
+            msg = liblo.Message(path)
+            msg.add(args)
+
+            # Need to properly format the address here
+            OSCtoXbeeMessage(xbee, address, msg)
 
 
         print "--------------------"
