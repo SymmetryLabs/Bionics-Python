@@ -145,6 +145,17 @@ class MyServer(ServerThread):
             OSCtoXbeeBroadcast(xbee, msg)
 
 
+        if path in ["anim/power", "anim/sparkle", "anim/eq"]:
+            print "Path ", path, " found!"
+            msg = liblo.Message(path)
+
+            # OSCtoXbeeBroadcast(xbee, msg)
+            OSCtoXbeeMessage(xbee, '\x00\x0A', msg)
+            OSCtoXbeeMessage(xbee, '\x00\x0B', msg)
+            OSCtoXbeeBroadcast(xbee, msg)
+
+
+
         # Pass forward messages from Processing to OSC control of specific units
         # Need to update this to select the wildcards
         if path == 'unit/*/anim/hue':
@@ -182,7 +193,7 @@ except liblo.AddressError, err:
 def forwardOSCMessage(reports):
     # print "Report[0]: ", reports[0]
     msg = reports[0]["msg"]
-    print "Forwarding OSC Message: ", reports[0]["msg"]
+    # print "Forwarding OSC Message: ", reports[0]["msg"]
     liblo.send(targetOSC, msg)
 
 
@@ -265,19 +276,19 @@ def getOSCFromXbeeMessage(response):
 
 def message_received(response):
     global allReports, numberStoredEntries
-    if response['id'] is not 'rx': 
-        print "RESPONSE: ", response['id']
-    print "--------------------"
-    print "XBEE Message RECEIVED"
+    # if response['id'] is not 'rx': 
+    #     print "RESPONSE: ", response['id']
+    # print "--------------------"
+    # print "XBEE Message RECEIVED"
 
-    print "Response: ", response
+    # print "Response: ", response
 
     # If statement is to exclude poorly formatted xbee messages
     # Usually there is only one sent, when units start (all empty \x00)
     # Should eliminate this from xBee end...
     if ',' in response['rf_data']:
         reports = getOSCFromXbeeMessage(response)
-        print "In message_received: ", reports
+        # print "In message_received: ", reports
 
         # Pass OSC message through to Processing
         forwardOSCMessage(reports)
@@ -293,8 +304,8 @@ def message_received(response):
     else:
         print "Received bad xBee message"
 
-    print "--------------------"
-    print ""
+    # print "--------------------"
+    # print ""
 
 
 
@@ -346,6 +357,7 @@ def xbeeSendBroadcast(xbee, packed_data):
 def xbeeSendMessage(xbee, address, packed_data):
     print "--------------------"
     print "XBEE Sending Message to ", address
+    print "Packed_data: ", packed_data
     xbee.tx(
         dest_addr = address,
         # dest_addr = b'\x00\x0A',
