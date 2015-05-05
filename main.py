@@ -42,27 +42,11 @@ print ""
 
 
 
-
-
 # --------------------------------------------
 # --------------------------------------------
-# x- INITIALIZE INTERNAL STUFF
-
-# Main data structure for communications tracking
-global allReports, numberStoredEntries
-allReports = []
-numberStoredEntries = 5000
-
-
-
-
-
-
+# -------------- OSC IN and OUT --------------
 # --------------------------------------------
 # --------------------------------------------
-# x- INITIALIZE OSC SERVER and CLIENT
-# x- WRITE ALL MIDI FUNCTIONS
-
 
 def OSCtoXbeeBroadcast(xbee, OSCmsg):
     # Convert from OSC message to byte stream of packed_data
@@ -75,106 +59,22 @@ def OSCtoXbeeMessage(xbee, address, OSCmsg):
 
 
 # OSC Server for receiving messages
-class MyServer(ServerThread):
+class OSCServer(ServerThread):
     def __init__(self):
         ServerThread.__init__(self, 9049)
-
-    # @make_method('/foo', 'ifs')
-    # def foo_callback(self, path, args):
-    #     i, f, s = args
-    #     print "received message '%s' with arguments: %d, %f, %s" % (path, i, f, s)
 
     @make_method(None, None)
     def fallback(self, path, args):
         print "--------------------"
         print "OSC CALLBACK FUNCTION"  
-        print datetime.now(), "received unknown message '%s', '%s'" % (path, args)
-        # print path
-        # print args
+        print datetime.now(), "received message '%s', '%s'" % (path, args)
 
-        # Select out paths where we want to control the units
-        if path == '/eq':
-            print "Path '/eq' found!"
-            # Repack the message...seems like a stupid step
-            msg = liblo.Message(path)
-            for data in args:
-                msg.add(data)
-
-            # Send to a unit of my choice
-            OSCtoXbeeBroadcast(xbee, msg)
-
-        if path == '/midi/cc':
-            print "Path '/midi/cc' found!"
-            # Repack the message...seems like a stupid step
-            msg = liblo.Message(path)
-            for data in args:
-                msg.add(data)
-
-            # Send to a unit of my choice
-            OSCtoXbeeBroadcast(xbee, msg)
-
-        # Messages to change 
-        if path == 'report/acc_r':
-            print "Path 'report/acc_r' found!"
-            msg = liblo.Message(path)
-
-            OSCtoXbeeBroadcast(xbee, msg)
-
-        if path == 'report/acc_p':
-            print "Path 'report/acc_p' found!"
-            msg = liblo.Message(path)
-
-            OSCtoXbeeBroadcast(xbee, msg)
-
-        if path == 'report/gyr_r':
-            print "Path 'report/gyr_r' found!"
-            msg = liblo.Message(path)
-
-            OSCtoXbeeBroadcast(xbee, msg)
-
-        if path == 'report/gyr_p':
-            print "Path 'report/gyr_p' found!"
-            msg = liblo.Message(path)
-
-            OSCtoXbeeBroadcast(xbee, msg)
-
-        if path == 'report/mix':
-            print "Path 'report/mix' found!"
-            msg = liblo.Message(path)
-
-            OSCtoXbeeBroadcast(xbee, msg)
-
-
-        if path in ["anim/power", "anim/sparkle", "anim/eq"]:
-            print "Path ", path, " found!"
-            msg = liblo.Message(path)
-
-            # OSCtoXbeeBroadcast(xbee, msg)
-            OSCtoXbeeMessage(xbee, '\x00\x0A', msg)
-            OSCtoXbeeMessage(xbee, '\x00\x0B', msg)
-            OSCtoXbeeBroadcast(xbee, msg)
-
-
-
-        # Pass forward messages from Processing to OSC control of specific units
-        # Need to update this to select the wildcards
-        if path == 'unit/*/anim/hue':
-            print "Path 'unit/*/anim/hue' found!"
-            msg = liblo.Message(path)
-            msg.add(args)
-
-            # Need to properly format the address here
-            OSCtoXbeeMessage(xbee, address, msg)
-
-
-        print "--------------------"
-        print ""
-
-
+        # Is this what I want?  I should have something about the message address pick which xBee this goes to
+        OSCtoXbeeBroadcast(xbee, msg)
 
 
 try:
-    server = MyServer()
+    server = OSCServer()
 except ServerError, err:
     print str(err)
     sys.exit()
@@ -182,15 +82,16 @@ except ServerError, err:
 server.start()
 
 
-# send all messages to port 9050 on the local machine
+# Send all messages to port 9050 on the local machine
 try:
     targetOSC = liblo.Address(9050)
 except liblo.AddressError, err:
     print str(err)
     sys.exit()
 
+
 # Sends OSC messages to Processing port
-def forwardOSCMessage(reports):
+def xBeeToOSCMessage(reports):
     # print "Report[0]: ", reports[0]
     msg = reports[0]["msg"]
     # print "Forwarding OSC Message: ", reports[0]["msg"]
@@ -198,31 +99,22 @@ def forwardOSCMessage(reports):
 
 
 
-# WRITE FUNCTIONS FOR SENDING AND PACKING STUFF
-# WHAT DO THE MESSAGES I SEND FORTH LOOK LIKE?
-
-
 
 # --------------------------------------------
 # --------------------------------------------
-# x- INITIALIZE XBEE
-# SET XBEE CALLBACK TO INTERNAL STUFF
-
-def printReports(reports):
-    for report in reports:
-        print "-Start Report-"
-        for message in report['msg']:
-            print "message ", message
-        print "-End Report-"
+# ------------ XBEE IN and OUT ---------------
+# --------------------------------------------
+# --------------------------------------------
 
 
+# Take in xBee response, return report {timestamp, address, OSCMessage}
 def getOSCFromXbeeMessage(response):
-    reports = []
 
     packed_data = response['rf_data']
     # print "xBee payload = ", packed_data
     # print "Size of xBee payload ", len(packed_data)
 
+    # Take the bit data from xBee and extract the OSC Message (address, types, data)
     deserializedMessage = decodeOSC(packed_data)
     addr = deserializedMessage.pop(0)
     typeString = deserializedMessage.pop(0)
@@ -238,6 +130,8 @@ def getOSCFromXbeeMessage(response):
     # for byte in addr:
         # addr = 
 
+
+    # Extract the message source
     unitID = response['source_addr'] # need to convert to string?
     # print "unitID: ", repr(unitID)
     # REALLY need to replace this with something even remotely slick... ;)
@@ -252,30 +146,33 @@ def getOSCFromXbeeMessage(response):
     else:
         print "Address of unit not detected"
 
-
     addr = 'unit/' + unitID + addr
 
-    msg = liblo.Message(addr)
-    for entry in data:
-        msg.add(entry)
 
+    # Add the OSC data to the OSCMessage object
+    OSCmsg = liblo.Message(addr)
+    for entry in data:
+        OSCmsg.add(entry)
+
+
+    # Record the message timestamp
     timeStamp = datetime.now()
 
-    reportToStore = {}
-    reportToStore["msg"] = msg
-    reportToStore["time"] = datetime.now()
-    reportToStore["unitID"] = unitID
 
-    reports.insert( 0, reportToStore )
-
-    return reports
+    # Place the time, message, and source address into a report
+    report = {}
+    report["OSCmsg"] = OSCmsg
+    report["time"] = datetime.now()
+    report["unitID"] = unitID
 
 
+    return report
 
 
 
+
+# Called upon incoming xBee message
 def message_received(response):
-    global allReports, numberStoredEntries
     # if response['id'] is not 'rx': 
     #     print "RESPONSE: ", response['id']
     # print "--------------------"
@@ -287,20 +184,12 @@ def message_received(response):
     # Usually there is only one sent, when units start (all empty \x00)
     # Should eliminate this from xBee end...
     if ',' in response['rf_data']:
-        reports = getOSCFromXbeeMessage(response)
+        report = getOSCFromXbeeMessage(response)
         # print "In message_received: ", reports
 
         # Pass OSC message through to Processing
-        forwardOSCMessage(reports)
+        xBeeToOSCMessage(report)
 
-        # Process the report and trigger actions
-
-        # Store it when done
-        # check to see if queue is too big
-        for report in reports:
-            while len(allReports) >= numberStoredEntries:
-                allReports.pop() # remove last entry
-            allReports.insert( 0, report )
     else:
         print "Received bad xBee message"
 
