@@ -4,10 +4,16 @@ import liblo
 from liblo import *
 import sys
 from time import sleep
+from colorsys import hsv_to_rgb
+from itertools import chain
 
+def chunks(li, n):
+    for i in xrange(0, len(li), n):
+        yield li[i:i+n]
 
 try:
-    targetA = liblo.Address("172.16.0.78", 9000)
+    # targetA = liblo.Address("172.16.0.78", 9000)
+    targetA = liblo.Address("169.254.1.1", 9000)
     targetSelf = liblo.Address(9000)
 except liblo.AddressError, err:
     print str(err)
@@ -43,15 +49,64 @@ class MyServer(ServerThread):
         print "received message '%s' with argument: %f" % (path, d)
 
         # Parse into iLevel
-        level = level2rgb(d)
+        level = mag2level(d)
+        print "level = ", level
         rgbBlob = level2rgb(level)
         print "rgbBlob: ", rgbBlob
 
         # Forward to the unit
-        msg = liblo.Message("/outputs/rgb/1")
+        msg = liblo.Message("/A/outputs/rgb/1")
         msg.add(rgbBlob)
-        # liblo.send(targetA, msg)
-        liblo.send(targetSelf, msg)
+        liblo.send(targetA, msg)
+        # liblo.send(targetSelf, msg)
+
+    @make_method('/A/leds', 'iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii')
+    def mag_callback(self, path, args):
+
+
+        hsvs = [hsv for hsv in chunks(args, 3)]
+        rgbs = [hsv_to_rgb(h[0]/255., h[1]/255., h[2]/255.) for h in hsvs]
+        rgbs = list(chain.from_iterable(rgbs))
+        rgbs = [int(v*255) for v in rgbs]
+        print rgbs
+        # print "received message '%s' with argument: %f" % (path, d)
+        print "received /A/leds"
+        msg = liblo.Message("/A/outputs/rgb/1")
+        msg.add(rgbs)
+        liblo.send(targetA, msg)
+        # liblo.send(targetSelf, msg)
+
+    @make_method('/B/leds', 'iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii')
+    def mag_callbackB(self, path, args):
+
+
+        hsvs = [hsv for hsv in chunks(args, 3)]
+        rgbs = [hsv_to_rgb(h[0]/255., h[1]/255., h[2]/255.) for h in hsvs]
+        rgbs = list(chain.from_iterable(rgbs))
+        rgbs = [int(v*255) for v in rgbs]
+        print rgbs
+        # print "received message '%s' with argument: %f" % (path, d)
+        print "received /B/leds"
+        msg = liblo.Message("/B/outputs/rgb/1")
+        msg.add(rgbs)
+        liblo.send(targetA, msg)
+        # liblo.send(targetSelf, msg)
+
+    @make_method('/B/leds', 'iiiiiiiiiiiiiii')
+    def mag_callbackB5(self, path, args):
+
+
+        hsvs = [hsv for hsv in chunks(args, 3)]
+        rgbs = [hsv_to_rgb(h[0]/255., h[1]/255., h[2]/255.) for h in hsvs]
+        rgbs = list(chain.from_iterable(rgbs))
+        rgbs = [int(v*255) for v in rgbs]
+        print rgbs
+        # print "received message '%s' with argument: %f" % (path, d)
+        print "received /B/leds"
+        msg = liblo.Message("/B/outputs/rgb/1")
+        msg.add(rgbs)
+        liblo.send(targetA, msg)
+        # liblo.send(targetSelf, msg)
 
     @make_method('/foo', 'ifs')
     def foo_callback(self, path, args):
