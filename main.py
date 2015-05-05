@@ -93,7 +93,7 @@ except liblo.AddressError, err:
 # Sends OSC messages to Processing port
 def xBeeToOSCMessage(reports):
     # print "Report[0]: ", reports[0]
-    msg = reports[0]["msg"]
+    msg = reports["OSCmsg"]
     # print "Forwarding OSC Message: ", reports[0]["msg"]
     liblo.send(targetOSC, msg)
 
@@ -175,10 +175,10 @@ def getOSCFromXbeeMessage(response):
 def message_received(response):
     # if response['id'] is not 'rx': 
     #     print "RESPONSE: ", response['id']
-    # print "--------------------"
-    # print "XBEE Message RECEIVED"
+    print "--------------------"
+    print "XBEE Message RECEIVED"
 
-    # print "Response: ", response
+    print "Response: ", response
 
     # If statement is to exclude poorly formatted xbee messages
     # Usually there is only one sent, when units start (all empty \x00)
@@ -193,8 +193,8 @@ def message_received(response):
     else:
         print "Received bad xBee message"
 
-    # print "--------------------"
-    # print ""
+    print "--------------------"
+    print ""
 
 
 
