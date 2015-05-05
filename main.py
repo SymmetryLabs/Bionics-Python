@@ -1,14 +1,4 @@
-# What's my current problem?
-# unit -> xbee -> python xbee -> OSC -> Processing
-
-
-# Processing -> OSC -> python osc -> python xbee -> unit -> deserialize at unit
-# NEED:
-# -serialize message in Python and pack into xbee : can I do this with liblo.send?...no, think I need message.serialise()
-
-# --------------------------------------------
-# --------------------------------------------
-# x- IMPORT NECESSARY STUFF
+# This is a lightweight gateway from xBee to UDP OSC and vice versa
 
 import logging
 import sys
@@ -172,7 +162,7 @@ def getOSCFromXbeeMessage(response):
 
 
 # Called upon incoming xBee message
-def message_received(response):
+def xBee_received(response):
     # if response['id'] is not 'rx': 
     #     print "RESPONSE: ", response['id']
     print "--------------------"
@@ -220,7 +210,7 @@ except:
     raise OSError
 
 # Initialize xbee object if Serial connetion successful
-xbee = XBee(ser, escaped = True, callback=message_received)
+xbee = XBee(ser, escaped = True, callback=xBee_received)
 print "XBEE Object CREATED"
 
 
@@ -287,18 +277,8 @@ print "** Console Reports will trigger as events are received **"
 
 try:
     while True:
-        # NEED TO BUILD INTO PROPER MODEL LOGIC STRUCTURE
-        # Put broadcast data into structure and send out to units
-        # 
-        # sleep(1)
-
         # Send test OSC messages to units
         # xbeeSendBroadcast(xbee, OSC_Tx_Test)
-        # print "filterTimes", filter_midiMusic_timesSent
-
-        # print "magnitudeCutoff", magnitudeCutoff
-        # print "----------"
-        # print
         pass
 
 except KeyboardInterrupt:
